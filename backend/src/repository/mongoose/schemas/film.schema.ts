@@ -5,7 +5,7 @@ export type FilmDocument = Film & Document;
 export class Session {
   @Prop({ required: true }) id!: string;
   @Prop({ required: true }) daytime!: string;
-  @Prop({ required: true }) hall!: string;
+  @Prop({ required: true }) hall!: number;
   @Prop({ required: true }) price!: number;
   @Prop({ type: [String], default: [] }) taken: string[] = [];
   @Prop({ default: 10 }) rows!: number;

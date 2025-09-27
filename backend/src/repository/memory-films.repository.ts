@@ -93,7 +93,7 @@ export class MemoryFilmsRepository implements FilmsRepository {
         {
           id: '1-1',
           daytime: '2024-01-20T18:00:00.001Z',
-          hall: '1',
+          hall: 1,
           rows: 10,
           seats: 100,
           price: 350,
@@ -102,7 +102,7 @@ export class MemoryFilmsRepository implements FilmsRepository {
         {
           id: '1-2',
           daytime: '2024-01-20T21:00:00.001Z',
-          hall: '2',
+          hall: 2,
           rows: 8,
           seats: 80,
           price: 400,
@@ -117,7 +117,7 @@ export class MemoryFilmsRepository implements FilmsRepository {
         {
           id: '2-1',
           daytime: '2024-01-20T19:00:00.001Z',
-          hall: '3',
+          hall: 3,
           rows: 12,
           seats: 120,
           price: 450,
@@ -132,7 +132,7 @@ export class MemoryFilmsRepository implements FilmsRepository {
         {
           id: '3-1',
           daytime: '2024-01-20T17:30:00.001Z',
-          hall: '4',
+          hall: 4,
           rows: 6,
           seats: 60,
           price: 300,
@@ -147,7 +147,7 @@ export class MemoryFilmsRepository implements FilmsRepository {
         {
           id: '4-1',
           daytime: '2024-01-20T16:00:00.001Z',
-          hall: '5',
+          hall: 5,
           rows: 8,
           seats: 75,
           price: 320,
@@ -162,7 +162,7 @@ export class MemoryFilmsRepository implements FilmsRepository {
         {
           id: '5-1',
           daytime: '2024-01-20T18:30:00.001Z',
-          hall: '6',
+          hall: 6,
           rows: 15,
           seats: 150,
           price: 500,
@@ -177,7 +177,7 @@ export class MemoryFilmsRepository implements FilmsRepository {
         {
           id: '6-1',
           daytime: '2024-01-20T17:00:00.001Z',
-          hall: '7',
+          hall: 7,
           rows: 5,
           seats: 50,
           price: 280,

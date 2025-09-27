@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Param, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Get,
+  BadRequestException,
+} from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto, OrderDto, TicketDto } from './dto/order.dto';
 
@@ -15,18 +22,37 @@ export class OrderController {
   async createOrder(
     @Body() createOrderDto: CreateOrderDto,
   ): Promise<OrderResponse> {
+    // Валидация обязательных полей
+    if (!createOrderDto.tickets || createOrderDto.tickets.length === 0) {
+      throw new BadRequestException('Tickets are required');
+    }
+
+    for (const ticket of createOrderDto.tickets) {
+      if (!ticket.film || !ticket.session || !ticket.price) {
+        throw new BadRequestException('All ticket fields are required');
+      }
+    }
+
     try {
       const order = await this.orderService.createOrder(createOrderDto);
       return {
         total: order.tickets.length,
         items: order.tickets.map((ticket) => ({
           id: order.id,
-          ...ticket,
+          film: ticket.film,
+          session: ticket.session,
+          daytime: ticket.daytime,
+          row: ticket.row,
+          seat: ticket.seat,
+          price: ticket.price,
         })),
       };
     } catch (error) {
-      console.error('Order creation error:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      } else {
+        throw new BadRequestException('Unknown error occurred');
+      }
     }
   }
 
