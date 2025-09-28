@@ -14,7 +14,7 @@ interface OrderResponse {
   items: Array<TicketDto & { id: string }>;
 }
 
-@Controller('order')
+@Controller('api/afisha/order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 

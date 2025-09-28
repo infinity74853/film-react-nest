@@ -30,14 +30,6 @@ import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.re
       rootPath: path.join(__dirname, '..', 'public'),
       serveRoot: '/',
     }),
-    // Явно для afisha
-    ServeStaticModule.forRoot({
-      rootPath: path.join(__dirname, '..', 'public', 'content', 'afisha'),
-      serveRoot: '/content/afisha',
-      serveStaticOptions: {
-        index: false,
-      },
-    }),
     MongooseModule.forRoot(
       process.env.DATABASE_URL || 'mongodb://localhost:27017/practicum',
     ),
