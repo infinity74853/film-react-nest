@@ -20,21 +20,23 @@ export class MongooseFilmsRepository implements FilmsRepository {
 
     const cleanedPath = imagePath.trim();
 
-    // Если путь уже полный, возвращаем как есть
     if (
       cleanedPath.startsWith('http://') ||
       cleanedPath.startsWith('https://')
     ) {
+      try {
+        const url = new URL(cleanedPath);
+        return url.pathname;
+      } catch {
+        return cleanedPath;
+      }
+    }
+
+    if (cleanedPath.startsWith('/content/afisha')) {
       return cleanedPath;
     }
 
-    // Если путь начинается с /content/afisha — добавляем только домен
-    if (cleanedPath.startsWith('/content/afisha')) {
-      return `${this.apiUrl}${cleanedPath}`;
-    }
-
-    // Если путь без префикса — добавляем /content/afisha и домен
-    return `${this.apiUrl}/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
+    return `/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
   }
 
   async findAll(): Promise<FilmDto[]> {
