@@ -7,7 +7,6 @@ import { AppController } from './app.controller';
 
 import { FilmsController } from './films/films.controller';
 import { OrderController } from './order/order.controller';
-import { StaticController } from './static/static.controller';
 import { FilmsService } from './films/films.service';
 import { OrderService } from './order/order.service';
 
@@ -28,8 +27,8 @@ import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.re
       cache: true,
     }),
     ServeStaticModule.forRoot({
-      rootPath: path.join(__dirname, '..', '..', 'public'),
-      serveRoot: '/content/afisha',
+      rootPath: path.join(__dirname, '..', 'public'),
+      serveRoot: '/',
     }),
     MongooseModule.forRoot(
       process.env.DATABASE_URL || 'mongodb://localhost:27017/practicum',
@@ -37,12 +36,7 @@ import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.re
     MongooseModule.forFeature([{ name: Film.name, schema: FilmSchema }]),
     MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
   ],
-  controllers: [
-    AppController,
-    FilmsController,
-    OrderController,
-    StaticController,
-  ],
+  controllers: [AppController, FilmsController, OrderController],
   providers: [
     FilmsService,
     OrderService,

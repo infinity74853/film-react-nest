@@ -20,7 +20,7 @@ export class MongooseFilmsRepository implements FilmsRepository {
       ? imagePath
       : `/${imagePath}`;
 
-    return `http://localhost:3000/api/afisha/content/afisha${normalizedPath}`;
+    return `http://localhost:3000/content/afisha${normalizedPath}`;
   }
 
   async findAll(): Promise<FilmDto[]> {
