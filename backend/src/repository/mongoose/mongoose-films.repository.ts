@@ -20,18 +20,6 @@ export class MongooseFilmsRepository implements FilmsRepository {
 
     const cleanedPath = imagePath.trim();
 
-    if (
-      cleanedPath.startsWith('http://') ||
-      cleanedPath.startsWith('https://')
-    ) {
-      try {
-        const url = new URL(cleanedPath);
-        return url.pathname;
-      } catch {
-        return cleanedPath;
-      }
-    }
-
     if (cleanedPath.startsWith('/content/afisha')) {
       return cleanedPath;
     }
