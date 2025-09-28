@@ -20,11 +20,18 @@ export class MongooseFilmsRepository implements FilmsRepository {
 
     const cleanedPath = imagePath.trim();
 
-    if (cleanedPath.startsWith('/content/afisha')) {
+    if (
+      cleanedPath.startsWith('http://') ||
+      cleanedPath.startsWith('https://')
+    ) {
       return cleanedPath;
     }
 
-    return `/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
+    if (cleanedPath.startsWith('/content/afisha')) {
+      return `${this.apiUrl}${cleanedPath}`;
+    }
+
+    return `${this.apiUrl}/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
   }
 
   async findAll(): Promise<FilmDto[]> {
