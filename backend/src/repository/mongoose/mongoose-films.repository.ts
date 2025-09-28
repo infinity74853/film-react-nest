@@ -28,12 +28,12 @@ export class MongooseFilmsRepository implements FilmsRepository {
       return cleanedPath;
     }
 
-    // Если путь уже начинается с /content/afisha — просто добавляем домен
+    // Если путь начинается с /content/afisha — добавляем только домен
     if (cleanedPath.startsWith('/content/afisha')) {
       return `${this.apiUrl}${cleanedPath}`;
     }
 
-    // Иначе добавляем /content/afisha и домен
+    // Если путь без префикса — добавляем /content/afisha и домен
     return `${this.apiUrl}/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
   }
 
