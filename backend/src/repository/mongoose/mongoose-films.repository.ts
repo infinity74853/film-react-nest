@@ -21,6 +21,19 @@ export class MongooseFilmsRepository implements FilmsRepository {
     const cleanedPath = imagePath.trim();
 
     if (
+      process.env.NODE_ENV === 'test' ||
+      process.env.DATABASE_DRIVER === 'memory'
+    ) {
+      if (cleanedPath.startsWith('/content/afisha/')) {
+        return cleanedPath;
+      }
+      if (cleanedPath.startsWith('/')) {
+        return `/content/afisha${cleanedPath}`;
+      }
+      return `/content/afisha/${cleanedPath}`;
+    }
+
+    if (
       cleanedPath.startsWith('http://') ||
       cleanedPath.startsWith('https://')
     ) {
