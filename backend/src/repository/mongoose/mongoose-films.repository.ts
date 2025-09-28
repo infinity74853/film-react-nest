@@ -13,14 +13,28 @@ import {
 export class MongooseFilmsRepository implements FilmsRepository {
   constructor(@InjectModel(Film.name) private filmModel: Model<FilmDocument>) {}
 
+  private readonly apiUrl = process.env.API_URL || 'http://localhost:3000';
+
   private formatImageUrl(imagePath: string): string {
     if (!imagePath) return '';
 
-    const normalizedPath = imagePath.startsWith('/')
-      ? imagePath
-      : `/${imagePath}`;
+    const cleanedPath = imagePath.trim();
 
-    return `/content/afisha${normalizedPath}`;
+    // Если путь уже полный, возвращаем как есть
+    if (
+      cleanedPath.startsWith('http://') ||
+      cleanedPath.startsWith('https://')
+    ) {
+      return cleanedPath;
+    }
+
+    // Если путь уже начинается с /content/afisha — просто добавляем домен
+    if (cleanedPath.startsWith('/content/afisha')) {
+      return `${this.apiUrl}${cleanedPath}`;
+    }
+
+    // Иначе добавляем /content/afisha и домен
+    return `${this.apiUrl}/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
   }
 
   async findAll(): Promise<FilmDto[]> {
