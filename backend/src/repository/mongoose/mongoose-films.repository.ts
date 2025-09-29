@@ -39,7 +39,7 @@ export class MongooseFilmsRepository implements FilmsRepository {
     });
 
     if (isTestEnvironment) {
-      return `/content/afisha/${filename}`;
+      return `/content/afisha${filename}`;
     }
 
     // Для разработки - полные URL
