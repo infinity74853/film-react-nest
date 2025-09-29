@@ -15,34 +15,15 @@ export class MongooseFilmsRepository implements FilmsRepository {
 
   private readonly apiUrl = process.env.API_URL || 'http://localhost:3000';
 
-  private formatImageUrl(imagePath: string, request?: any): string {
+  private formatImageUrl(imagePath: string): string {
     if (!imagePath) return '';
 
     const cleanedPath = imagePath.trim();
     const filename = cleanedPath.split('/').pop() || '';
-    const relativePath = `/content/afisha/${filename}`;
 
-    // Определяем контекст
-    const isTestEnvironment =
-      process.env.NODE_ENV === 'test' ||
-      process.env.JEST_WORKER_ID !== undefined;
-
-    const isFrontendRequest =
-      request?.headers?.['user-agent']?.includes('Mozilla');
-
-    // Для тестов - всегда относительные пути
-    if (isTestEnvironment) {
-      return relativePath;
-    }
-
-    // Для фронтенда - полные URL
-    if (isFrontendRequest || !isTestEnvironment) {
-      const baseUrl = process.env.API_URL || 'http://localhost:3000';
-      return `${baseUrl}${relativePath}`;
-    }
-
-    // По умолчанию - относительные пути
-    return relativePath;
+    // ВСЕГДА возвращаем полные URL
+    const baseUrl = process.env.API_URL || 'http://localhost:3000';
+    return `${baseUrl}/content/afisha/${filename}`;
   }
 
   async findAll(): Promise<FilmDto[]> {
