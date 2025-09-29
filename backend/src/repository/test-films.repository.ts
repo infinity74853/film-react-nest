@@ -1,29 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Film, FilmDocument } from './schemas/film.schema';
-import { FilmsRepository } from '../films.repository.interface';
+import { Film, FilmDocument } from './mongoose/schemas/film.schema';
+import { FilmsRepository } from './films.repository.interface';
 import {
   FilmDto,
   FilmScheduleDto,
   ScheduleDto,
-} from '../../films/dto/films.dto';
+} from './../films/dto/films.dto';
 
 @Injectable()
-export class MongooseFilmsRepository implements FilmsRepository {
+export class TestFilmsRepository implements FilmsRepository {
   constructor(@InjectModel(Film.name) private filmModel: Model<FilmDocument>) {}
-
-  private readonly apiUrl = process.env.API_URL || 'http://localhost:3000';
 
   private formatImageUrl(imagePath: string): string {
     if (!imagePath) return '';
-
     const cleanedPath = imagePath.trim();
     const filename = cleanedPath.split('/').pop() || '';
-
-    // ВСЕГДА возвращаем полные URL для фронтенда
-    const baseUrl = process.env.API_URL || 'http://localhost:3000';
-    return `${baseUrl}/images/${filename}`;
+    // ВСЕГДА возвращаем относительные пути для тестов
+    return `/images/${filename}`;
   }
 
   async findAll(): Promise<FilmDto[]> {
