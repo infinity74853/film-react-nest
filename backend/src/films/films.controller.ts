@@ -2,6 +2,8 @@ import { Controller, Get, Param } from '@nestjs/common';
 import { FilmsService } from './films.service';
 import { FilmDto, ScheduleDto } from './dto/films.dto';
 
+const BASE_URL = 'http://localhost:3000/content/afisha';
+
 @Controller('api/afisha/films')
 export class FilmsController {
   constructor(private readonly filmsService: FilmsService) {}
@@ -13,9 +15,21 @@ export class FilmsController {
   }> {
     try {
       const films = await this.filmsService.getAllFilms();
+
+      // Исправляем пути image и cover
+      const processedFilms = films.map((film) => ({
+        ...film,
+        image: film.image.startsWith('http')
+          ? film.image
+          : `${BASE_URL}${film.image}`,
+        cover: film.cover.startsWith('http')
+          ? film.cover
+          : `${BASE_URL}${film.cover}`,
+      }));
+
       return {
-        total: films.length,
-        items: films,
+        total: processedFilms.length,
+        items: processedFilms,
       };
     } catch (error: unknown) {
       console.error(
@@ -66,10 +80,20 @@ export class FilmsController {
   > {
     try {
       const films = await this.filmsService.getAllFilms();
+      const processedFilms = films.map((film) => ({
+        ...film,
+        image: film.image.startsWith('http')
+          ? film.image
+          : `${BASE_URL}${film.image}`,
+        cover: film.cover.startsWith('http')
+          ? film.cover
+          : `${BASE_URL}${film.cover}`,
+      }));
+
       return {
         success: true,
         count: films.length,
-        films: films.slice(0, 2),
+        films: processedFilms.slice(0, 2),
       };
     } catch (error: unknown) {
       console.error(

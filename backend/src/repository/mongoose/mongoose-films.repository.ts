@@ -19,22 +19,19 @@ export class MongooseFilmsRepository implements FilmsRepository {
     if (!imagePath) return '';
 
     const cleanedPath = imagePath.trim();
-    console.log('formatImageUrl input:', cleanedPath); // ← ЛОГ ДО
 
-    if (/^https?:\/\//.test(cleanedPath)) {
-      console.log('formatImageUrl output (absolute):', cleanedPath); // ← ЛОГ ПОСЛЕ
+    if (
+      cleanedPath.startsWith('http://') ||
+      cleanedPath.startsWith('https://')
+    ) {
       return cleanedPath;
     }
 
     if (cleanedPath.startsWith('/content/afisha')) {
-      const result = `${this.apiUrl}${cleanedPath}`;
-      console.log('formatImageUrl output (relative /content):', result);
-      return result;
+      return `${this.apiUrl}${cleanedPath}`;
     }
 
-    const result = `${this.apiUrl}/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
-    console.log('formatImageUrl output (relative):', result);
-    return result;
+    return `${this.apiUrl}/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
   }
 
   async findAll(): Promise<FilmDto[]> {

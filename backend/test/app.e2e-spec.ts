@@ -23,9 +23,6 @@ describe('Film API E2E Tests', () => {
     it('GET / - should return API info', async () => {
       const response = await request(app.getHttpServer()).get('/').expect(200);
 
-      console.log('=== ROOT RESPONSE ===');
-      console.log(JSON.stringify(response.body, null, 2));
-
       expect(response.body).toHaveProperty('message');
       expect(response.body).toHaveProperty('endpoints');
     });
@@ -36,9 +33,6 @@ describe('Film API E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .get('/api/afisha/films')
         .expect(200);
-
-      console.log('=== FILMS RESPONSE ===');
-      console.log(JSON.stringify(response.body, null, 2));
 
       expect(response.body).toHaveProperty('total');
       expect(response.body).toHaveProperty('items');
