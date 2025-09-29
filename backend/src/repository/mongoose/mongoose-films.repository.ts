@@ -20,18 +20,6 @@ export class MongooseFilmsRepository implements FilmsRepository {
 
     const cleanedPath = imagePath.trim();
 
-    // Для тестовой среды возвращаем относительные пути
-    if (process.env.NODE_ENV === 'test') {
-      if (cleanedPath.startsWith('/content/afisha/')) {
-        return cleanedPath;
-      }
-      if (cleanedPath.startsWith('/')) {
-        return `/content/afisha${cleanedPath}`;
-      }
-      return `/content/afisha/${cleanedPath}`;
-    }
-
-    // Для продакшена/разработки возвращаем полные URL
     if (
       cleanedPath.startsWith('http://') ||
       cleanedPath.startsWith('https://')
