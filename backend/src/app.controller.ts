@@ -15,6 +15,7 @@ export class AppController {
         createOrder: 'POST /api/afisha/order',
         confirmOrder: 'POST /api/afisha/order/:id/confirm',
         getOrder: 'GET /api/afisha/order/:id',
+        staticContent: 'GET /images/*',
       },
     });
   }
