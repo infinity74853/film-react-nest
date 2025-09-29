@@ -19,32 +19,10 @@ export class MongooseFilmsRepository implements FilmsRepository {
     if (!imagePath) return '';
 
     const cleanedPath = imagePath.trim();
+
+    // ВСЕГДА возвращаем только имя файла
     const filename = cleanedPath.split('/').pop() || '';
-
-    // Расширенная проверка для CI/тестовой среды
-    const isTestEnvironment =
-      process.env.NODE_ENV === 'test' ||
-      process.env.CI === 'true' ||
-      process.env.GITHUB_ACTIONS === 'true' ||
-      process.env.JEST_WORKER_ID !== undefined ||
-      typeof global.it === 'function' || // Jest test function
-      process.argv.some((arg) => arg.includes('jest') || arg.includes('test'));
-
-    console.log('Environment check:', {
-      NODE_ENV: process.env.NODE_ENV,
-      CI: process.env.CI,
-      GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
-      JEST_WORKER_ID: process.env.JEST_WORKER_ID,
-      isTestEnvironment,
-    });
-
-    if (isTestEnvironment) {
-      return `/content/afisha${filename}`;
-    }
-
-    // Для разработки - полные URL
-    const baseUrl = process.env.API_URL || 'http://localhost:3000';
-    return `${baseUrl}/content/afisha/${filename}`;
+    return filename;
   }
 
   async findAll(): Promise<FilmDto[]> {
