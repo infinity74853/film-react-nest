@@ -27,8 +27,8 @@ import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.re
       cache: true,
     }),
     ServeStaticModule.forRoot({
-      rootPath: path.join(__dirname, '..', 'public', 'content', 'afisha'),
-      serveRoot: '/content/afisha',
+      rootPath: path.join(__dirname, '..', 'public'),
+      serveRoot: '/',
     }),
     MongooseModule.forRoot(
       process.env.DATABASE_URL || 'mongodb://localhost:27017/practicum',
