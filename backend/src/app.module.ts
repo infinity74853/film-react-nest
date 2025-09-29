@@ -20,6 +20,9 @@ import { Order, OrderSchema } from './repository/mongoose/schemas/order.schema';
 import { MongooseFilmsRepository } from './repository/mongoose/mongoose-films.repository';
 import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.repository';
 
+// Test репозиторий
+import { TestFilmsRepository } from './repository/test-films.repository';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -44,17 +47,27 @@ import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.re
     MemoryOrderRepository,
     MongooseFilmsRepository,
     MongooseOrderRepository,
+    TestFilmsRepository, // ← Добавь это
     {
       provide: 'FilmsRepository',
       useFactory: (
         memoryRepo: MemoryFilmsRepository,
         mongoRepo: MongooseFilmsRepository,
+        testRepo: TestFilmsRepository, // ← И это
       ) => {
+        // Для тестовой среды используем TestFilmsRepository
+        if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
+          return testRepo;
+        }
         return process.env.DATABASE_DRIVER === 'mongodb'
           ? mongoRepo
           : memoryRepo;
       },
-      inject: [MemoryFilmsRepository, MongooseFilmsRepository],
+      inject: [
+        MemoryFilmsRepository,
+        MongooseFilmsRepository,
+        TestFilmsRepository,
+      ], // ← И это
     },
     {
       provide: 'OrderRepository',
