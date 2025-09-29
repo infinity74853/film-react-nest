@@ -19,15 +19,23 @@ export class MongooseFilmsRepository implements FilmsRepository {
     if (!imagePath) return '';
 
     const cleanedPath = imagePath.trim();
-    const filename = cleanedPath.split('/').pop() || ''; // достаём только имя файла
+    const filename = cleanedPath.split('/').pop() || '';
     const relativePath = `/content/afisha/${filename}`;
 
-    // В тестах всегда отдаём относительный путь
+    // Если тесты — всегда отдаём относительный путь
     if (process.env.NODE_ENV === 'test') {
       return relativePath;
     }
 
-    // В dev/prod — полный URL для браузера
+    // Если путь уже полный и начинается с http — оставляем как есть
+    if (
+      cleanedPath.startsWith('http://') ||
+      cleanedPath.startsWith('https://')
+    ) {
+      return cleanedPath;
+    }
+
+    // Если путь относительный — приклеиваем baseUrl
     const baseUrl = process.env.API_URL || 'http://localhost:3000';
     return `${baseUrl}${relativePath}`;
   }
