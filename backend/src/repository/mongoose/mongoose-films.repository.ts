@@ -20,10 +20,9 @@ export class MongooseFilmsRepository implements FilmsRepository {
 
     const cleanedPath = imagePath.trim();
 
-    // Просто извлекаем имя файла из любого пути
-    const filename = cleanedPath.split('/').pop(); // всегда "bg1s.jpg"
-
-    return `/content/afisha/${filename}`;
+    // ВСЕГДА возвращаем только имя файла
+    const filename = cleanedPath.split('/').pop() || '';
+    return filename;
   }
 
   async findAll(): Promise<FilmDto[]> {
