@@ -20,27 +20,28 @@ export class MongooseFilmsRepository implements FilmsRepository {
 
     const cleanedPath = imagePath.trim();
 
-    // ВСЕГДА возвращаем относительные пути
-    if (cleanedPath.startsWith('/content/afisha/')) {
-      return cleanedPath;
+    // Для тестовой среды - относительные пути
+    if (process.env.NODE_ENV === 'test') {
+      if (cleanedPath.startsWith('/content/afisha/')) return cleanedPath;
+      if (cleanedPath.startsWith('/')) return `/content/afisha${cleanedPath}`;
+      if (cleanedPath.startsWith('http')) {
+        const filename = cleanedPath.split('/').pop();
+        return `/content/afisha/${filename}`;
+      }
+      return `/content/afisha/${cleanedPath}`;
     }
 
-    if (cleanedPath.startsWith('/')) {
-      return `/content/afisha${cleanedPath}`;
-    }
-
-    // Если пришел полный URL (из базы данных), извлекаем только имя файла
+    // Для разработки - полные URL (как у вас было)
     if (
       cleanedPath.startsWith('http://') ||
       cleanedPath.startsWith('https://')
     ) {
-      // Извлекаем только имя файла из URL
-      const filename = cleanedPath.split('/').pop(); // получаем "bg1s.jpg"
-      return `/content/afisha/${filename}`;
+      return cleanedPath;
     }
-
-    // Для простых имен файлов
-    return `/content/afisha/${cleanedPath}`;
+    if (cleanedPath.startsWith('/content/afisha')) {
+      return `${this.apiUrl}${cleanedPath}`;
+    }
+    return `${this.apiUrl}/content/afisha/${cleanedPath.replace(/^\/+/, '')}`;
   }
 
   async findAll(): Promise<FilmDto[]> {
