@@ -75,9 +75,9 @@ describe('Film API E2E Tests', () => {
 
     it('should test direct static access with relative paths', async () => {
       const testImages = [
-        '/content/afisha/bg1s.jpg',
-        '/content/afisha/bg2s.jpg',
-        '/content/afisha/bg3s.jpg',
+        '/images/bg1s.jpg',
+        '/images/bg2s.jpg',
+        '/images/bg3s.jpg',
       ];
 
       for (const imagePath of testImages) {
