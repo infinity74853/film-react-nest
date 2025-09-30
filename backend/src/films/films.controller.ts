@@ -1,7 +1,5 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { join } from 'path';
-import { existsSync } from 'fs';
 import { FilmsService } from './films.service';
 import { FilmDto, ScheduleDto } from './dto/films.dto';
 
@@ -11,63 +9,30 @@ export class FilmsController {
 
   @Get()
   async getFilms(): Promise<{ total: number; items: FilmDto[] }> {
-    try {
-      const films = await this.filmsService.getAllFilms();
-      return { total: films.length, items: films };
-    } catch (error: unknown) {
-      console.error(
-        'Error getting films:',
-        error instanceof Error ? error.message : error,
-      );
-      return { total: 0, items: [] };
-    }
+    return await this.filmsService.getAllFilms();
   }
 
   @Get(':id/schedule')
   async getFilmSchedule(
     @Param('id') id: string,
   ): Promise<{ total: number; items: ScheduleDto[] }> {
-    try {
-      const schedule = await this.filmsService.getFilmSchedule(id);
-      return { total: schedule.length, items: schedule };
-    } catch (error: unknown) {
-      console.error(
-        'Error getting schedule:',
-        error instanceof Error ? error.message : error,
-      );
-      return { total: 0, items: [] };
-    }
+    return await this.filmsService.getFilmSchedule(id);
   }
 
   // Эндпоинт-прокси для картинок
   @Get('images/:filename')
   async getImage(@Param('filename') filename: string, @Res() res: Response) {
-    try {
-      const imagePath = join(
-        process.cwd(),
-        'public',
-        'content',
-        'afisha',
-        filename,
-      );
+    const result = await this.filmsService.getImage(filename);
 
-      // Проверяем существование файла
-      if (!existsSync(imagePath)) {
-        return res.status(404).json({
-          message: 'Image not found',
-          filename: filename,
-        });
-      }
-
-      // Отправляем файл
-      return res.sendFile(filename, {
-        root: join(process.cwd(), 'public', 'content', 'afisha'),
+    if (result.success && result.filename && result.rootPath) {
+      return res.sendFile(result.filename, {
+        root: result.rootPath,
       });
-    } catch (error: unknown) {
-      console.error('Error serving image:', error);
-      return res.status(500).json({
-        message: 'Internal server error',
-        error: error instanceof Error ? error.message : String(error),
+    } else {
+      return res.status(result.statusCode).json({
+        message: result.message,
+        filename: result.filename,
+        error: result.error,
       });
     }
   }
@@ -77,18 +42,6 @@ export class FilmsController {
     | { success: boolean; count: number; films: FilmDto[] }
     | { success: boolean; error: string }
   > {
-    try {
-      const films = await this.filmsService.getAllFilms();
-      return { success: true, count: films.length, films: films.slice(0, 2) };
-    } catch (error: unknown) {
-      console.error(
-        'Debug endpoint error:',
-        error instanceof Error ? error.message : error,
-      );
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    return await this.filmsService.debugMongo();
   }
 }

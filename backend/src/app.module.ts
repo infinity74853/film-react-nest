@@ -4,6 +4,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule } from '@nestjs/config';
 import * as path from 'path';
 import { AppController } from './app.controller';
+import { AppService } from './app.service'; // Добавить этот импорт
 
 import { FilmsController } from './films/films.controller';
 import { OrderController } from './order/order.controller';
@@ -37,6 +38,7 @@ import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.re
   ],
   controllers: [AppController, FilmsController, OrderController],
   providers: [
+    AppService, // Добавить этот провайдер
     FilmsService,
     OrderService,
     MemoryFilmsRepository,
