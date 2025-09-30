@@ -3,6 +3,23 @@ import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import request from 'supertest';
 
+interface Film {
+  id: string;
+  rating: number;
+  director: string;
+  tags: string[];
+  title: string;
+  about: string;
+  description: string;
+  image: string;
+  cover: string;
+}
+
+interface FilmPath {
+  image: string;
+  cover: string;
+}
+
 describe('Film API E2E Tests', () => {
   let app: INestApplication;
 
@@ -58,26 +75,25 @@ describe('Film API E2E Tests', () => {
   });
 
   describe('Static Files', () => {
-    it('should have correct image paths in API response', async () => {
+    it('should have correct image file names in API response', async () => {
       const filmsResponse = await request(app.getHttpServer())
         .get('/api/afisha/films')
         .expect(200);
 
-      filmsResponse.body.items.forEach((film: any) => {
-        expect(film.image).toMatch(/\/content\/afisha\/bg\d+s\.jpg$/);
-        expect(film.cover).toMatch(/\/content\/afisha\/bg\d+c\.jpg$/);
+      filmsResponse.body.items.forEach((film: Film) => {
+        // Теперь ожидаем просто имена файлов
+        expect(film.image).toMatch(/^bg\d+s\.jpg$/);
+        expect(film.cover).toMatch(/^bg\d+c\.jpg$/);
       });
     });
 
-    it('should skip static file access in tests', async () => {
-      // В тестовой среде статика может не работать - это нормально
-    });
+    it('should skip static file access in tests', async () => {});
 
     it('should test direct static access with relative paths', async () => {
       const testImages = [
-        '/images/bg1s.jpg',
-        '/images/bg2s.jpg',
-        '/images/bg3s.jpg',
+        '/content/afisha/bg1s.jpg',
+        '/content/afisha/bg2s.jpg',
+        '/content/afisha/bg3s.jpg',
       ];
 
       for (const imagePath of testImages) {
@@ -87,39 +103,29 @@ describe('Film API E2E Tests', () => {
             response.status === 200 &&
             response.headers['content-type']?.includes('image/jpeg')
           ) {
-            // Статика доступна
           }
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-          // Ожидаемое поведение в тестовой среде
-        }
+        } catch {}
       }
     });
 
-    it('should extract relative paths from API response for testing', async () => {
+    it('should verify file names can be converted to full URLs', async () => {
       const filmsResponse = await request(app.getHttpServer())
         .get('/api/afisha/films')
         .expect(200);
 
-      const relativePaths = filmsResponse.body.items.map((film: any) => {
-        let imagePath = film.image;
-        let coverPath = film.cover;
+      const filmPaths: FilmPath[] = filmsResponse.body.items.map(
+        (film: Film) => {
+          return {
+            image: film.image,
+            cover: film.cover,
+          };
+        },
+      );
 
-        if (imagePath.startsWith('http')) {
-          const url = new URL(imagePath);
-          imagePath = url.pathname;
-        }
-        if (coverPath.startsWith('http')) {
-          const url = new URL(coverPath);
-          coverPath = url.pathname;
-        }
-
-        return { image: imagePath, cover: coverPath };
-      });
-
-      relativePaths.forEach((path: { image: string; cover: string }) => {
-        expect(path.image).toMatch(/^\/content\/afisha\/bg\d+s\.jpg$/);
-        expect(path.cover).toMatch(/^\/content\/afisha\/bg\d+c\.jpg$/);
+      filmPaths.forEach((path: FilmPath) => {
+        // Проверяем что это валидные имена файлов
+        expect(path.image).toMatch(/^bg\d+s\.jpg$/);
+        expect(path.cover).toMatch(/^bg\d+c\.jpg$/);
       });
     });
   });

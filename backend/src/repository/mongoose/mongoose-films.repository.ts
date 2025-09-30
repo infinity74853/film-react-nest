@@ -19,8 +19,8 @@ export class MongooseFilmsRepository implements FilmsRepository {
     if (!imagePath) return '';
 
     const cleanedPath = imagePath.trim();
-
     const filename = cleanedPath.split('/').pop() || '';
+
     return filename;
   }
 
