@@ -1,11 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import 'dotenv/config'
+import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix("api/afisha");
-  app.enableCors();
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  });
+
+  app.use('/', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path === '/') {
+      return res.json({
+        message: 'Film API',
+        status: 'OK',
+      });
+    }
+    next();
+  });
+
   await app.listen(3000);
 }
 bootstrap();

@@ -1,19 +1,74 @@
 import { Module } from '@nestjs/common';
-import {ServeStaticModule} from "@nestjs/serve-static";
-import {ConfigModule} from "@nestjs/config";
-import * as path from "node:path";
+import { MongooseModule } from '@nestjs/mongoose';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { ConfigModule } from '@nestjs/config';
+import * as path from 'path';
+import { AppController } from './app.controller';
+import { AppService } from './app.service'; // Добавить этот импорт
 
-import {configProvider} from "./app.config.provider";
+import { FilmsController } from './films/films.controller';
+import { OrderController } from './order/order.controller';
+import { FilmsService } from './films/films.service';
+import { OrderService } from './order/order.service';
+
+// Memory репозитории
+import { MemoryFilmsRepository } from './repository/memory-films.repository';
+import { MemoryOrderRepository } from './repository/memory-order.repository';
+
+// MongoDB схемы и репозитории
+import { Film, FilmSchema } from './repository/mongoose/schemas/film.schema';
+import { Order, OrderSchema } from './repository/mongoose/schemas/order.schema';
+import { MongooseFilmsRepository } from './repository/mongoose/mongoose-films.repository';
+import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.repository';
 
 @Module({
   imports: [
-	ConfigModule.forRoot({
-          isGlobal: true,
-          cache: true
-      }),
-      // @todo: Добавьте раздачу статических файлов из public
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'public'),
+    }),
+    MongooseModule.forRoot(
+      process.env.DATABASE_URL || 'mongodb://localhost:27017/practicum',
+    ),
+    MongooseModule.forFeature([{ name: Film.name, schema: FilmSchema }]),
+    MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
   ],
-  controllers: [],
-  providers: [configProvider],
+  controllers: [AppController, FilmsController, OrderController],
+  providers: [
+    AppService, // Добавить этот провайдер
+    FilmsService,
+    OrderService,
+    MemoryFilmsRepository,
+    MemoryOrderRepository,
+    MongooseFilmsRepository,
+    MongooseOrderRepository,
+    {
+      provide: 'FilmsRepository',
+      useFactory: (
+        memoryRepo: MemoryFilmsRepository,
+        mongoRepo: MongooseFilmsRepository,
+      ) => {
+        return process.env.DATABASE_DRIVER === 'mongodb'
+          ? mongoRepo
+          : memoryRepo;
+      },
+      inject: [MemoryFilmsRepository, MongooseFilmsRepository],
+    },
+    {
+      provide: 'OrderRepository',
+      useFactory: (
+        memoryRepo: MemoryOrderRepository,
+        mongoRepo: MongooseOrderRepository,
+      ) => {
+        return process.env.DATABASE_DRIVER === 'mongodb'
+          ? mongoRepo
+          : memoryRepo;
+      },
+      inject: [MemoryOrderRepository, MongooseOrderRepository],
+    },
+  ],
 })
 export class AppModule {}
