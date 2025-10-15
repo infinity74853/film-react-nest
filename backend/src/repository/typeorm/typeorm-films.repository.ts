@@ -37,9 +37,9 @@ export class TypeormFilmsRepository implements FilmsRepository {
 
         return {
           id: film.id,
-          rating: film.rating, // Уже число благодаря трансформеру
+          rating: film.rating,
           director: film.director,
-          tags: film.tags, // Уже массив благодаря трансформеру
+          tags: film.tags,
           title: film.title,
           about: film.about,
           description: film.description,
@@ -68,7 +68,7 @@ export class TypeormFilmsRepository implements FilmsRepository {
         id: film.id,
         rating: film.rating,
         director: film.director,
-        tags: film.tags, // Уже массив
+        tags: film.tags,
         title: film.title,
         about: film.about,
         description: film.description,
@@ -83,8 +83,8 @@ export class TypeormFilmsRepository implements FilmsRepository {
           hall: session.hall,
           rows: session.rows,
           seats: session.seats,
-          price: session.price, // Уже число
-          taken: session.taken, // Уже массив
+          price: session.price,
+          taken: session.taken,
         }),
       );
 
