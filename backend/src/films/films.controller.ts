@@ -36,12 +36,4 @@ export class FilmsController {
       });
     }
   }
-
-  @Get('debug/mongo')
-  async debugMongo(): Promise<
-    | { success: boolean; count: number; films: FilmDto[] }
-    | { success: boolean; error: string }
-  > {
-    return await this.filmsService.debugMongo();
-  }
 }

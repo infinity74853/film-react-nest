@@ -83,23 +83,4 @@ export class FilmsService {
       };
     }
   }
-
-  async debugMongo(): Promise<
-    | { success: boolean; count: number; films: FilmDto[] }
-    | { success: boolean; error: string }
-  > {
-    try {
-      const films = await this.filmsRepository.findAll();
-      return { success: true, count: films.length, films: films.slice(0, 2) };
-    } catch (error: unknown) {
-      console.error(
-        'Debug endpoint error:',
-        error instanceof Error ? error.message : error,
-      );
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }
 }
