@@ -26,7 +26,7 @@ export class Order {
   @Column()
   phone!: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ name: 'total_price', type: 'decimal', precision: 10, scale: 2 })
   totalPrice!: number;
 
   @Column({
@@ -36,6 +36,6 @@ export class Order {
   })
   status!: 'pending' | 'confirmed' | 'cancelled';
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 }

@@ -2,12 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CreateOrderDto, OrderDto, TicketDto } from '../../order/dto/order.dto';
 import { OrderRepository } from '../order.repository.interface';
+import { Schedule } from './entities/schedule.entity';
+import { Order } from './entities/order.entity';
 
 @Injectable()
 export class TypeormOrderRepository implements OrderRepository {
   constructor(private dataSource: DataSource) {}
 
   async create(orderData: CreateOrderDto): Promise<OrderDto> {
+    console.log('Received order data:', JSON.stringify(orderData, null, 2));
+
     if (!orderData.tickets || orderData.tickets.length === 0) {
       throw new Error('No tickets provided');
     }
@@ -19,26 +23,56 @@ export class TypeormOrderRepository implements OrderRepository {
     await queryRunner.startTransaction();
 
     try {
-      // Проверяем существование сеанса
-      const sessionResult = await queryRunner.query(
-        'SELECT taken FROM schedules WHERE id = $1 FOR UPDATE',
-        [firstTicket.session],
-      );
+      console.log('Starting order creation for session:', firstTicket.session);
 
-      if (!sessionResult || sessionResult.length === 0) {
+      // Используем репозиторий транзакции
+      const scheduleRepository = queryRunner.manager.getRepository(Schedule);
+      const schedule = await scheduleRepository.findOne({
+        where: { id: firstTicket.session },
+      });
+
+      if (!schedule) {
         throw new Error(`Session not found: ${firstTicket.session}`);
       }
 
-      const session = sessionResult[0];
+      console.log('Found schedule:', {
+        id: schedule.id,
+        filmId: schedule.filmId,
+        hall: schedule.hall,
+        daytime: schedule.daytime,
+        taken: schedule.taken,
+      });
 
-      // Проверка занятых мест - теперь taken это массив благодаря трансформеру
-      const takenArray = session.taken || [];
-      const takenSeats = new Set(takenArray);
+      // Обработка taken - безопасно преобразуем в массив
+      let currentTaken: string[] = [];
 
+      if (Array.isArray(schedule.taken)) {
+        currentTaken = schedule.taken;
+      } else if (typeof schedule.taken === 'string') {
+        // Если это строка, пытаемся распарсить
+        try {
+          const parsed = JSON.parse(schedule.taken);
+          currentTaken = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          currentTaken = [];
+        }
+      }
+
+      // Фильтруем только валидные места формата "ряд:место"
+      currentTaken = currentTaken.filter(
+        (seat) => typeof seat === 'string' && /^\d+:\d+$/.test(seat),
+      );
+
+      console.log('Processed taken seats:', currentTaken);
+
+      const takenSeats = new Set(currentTaken);
       const newSeats = orderData.tickets.map(
         (ticket: TicketDto) => `${ticket.row}:${ticket.seat}`,
       );
 
+      console.log('Requested seats:', newSeats);
+
+      // Проверяем, не заняты ли места
       for (const seat of newSeats) {
         if (takenSeats.has(seat)) {
           throw new Error(`Seat ${seat} is already taken`);
@@ -51,34 +85,35 @@ export class TypeormOrderRepository implements OrderRepository {
         0,
       );
 
-      // Создаем заказ
-      const orderResult = await queryRunner.query(
-        `INSERT INTO orders (tickets, email, phone, total_price, status, created_at) 
-         VALUES ($1, $2, $3, $4, $5, $6) 
-         RETURNING id, tickets, total_price as "totalPrice", status, created_at as "createdAt"`,
-        [
-          JSON.stringify(orderData.tickets),
-          orderData.email || 'user@example.com',
-          orderData.phone || '+1234567890',
-          totalPrice,
-          'pending',
-          new Date(),
-        ],
-      );
+      console.log('Total price:', totalPrice);
 
-      const savedOrder = orderResult[0];
+      // Создаем заказ через TypeORM
+      const orderRepository = queryRunner.manager.getRepository(Order);
+      const newOrder = orderRepository.create({
+        tickets: orderData.tickets,
+        email: orderData.email || 'user@example.com',
+        phone: orderData.phone || '+1234567890',
+        totalPrice: totalPrice,
+        status: 'pending' as const,
+        createdAt: new Date(),
+      });
 
-      // Обновляем занятые места в сеансе - работаем с массивом
-      const currentTaken: string[] = takenArray;
+      console.log('Creating order...');
+      const savedOrder = await orderRepository.save(newOrder);
+      console.log('Order created:', savedOrder.id);
+
+      // Обновляем занятые места
       const updatedTaken = [...currentTaken, ...newSeats];
+      console.log('Updating schedule with taken seats:', updatedTaken);
 
-      // Для PostgreSQL массива используем синтаксис массива
-      await queryRunner.query('UPDATE schedules SET taken = $1 WHERE id = $2', [
-        updatedTaken,
-        firstTicket.session,
-      ]);
+      // Обновляем через TypeORM
+      schedule.taken = updatedTaken;
+      await scheduleRepository.save(schedule);
+
+      console.log('Schedule updated successfully');
 
       await queryRunner.commitTransaction();
+      console.log('Transaction committed successfully');
 
       return {
         id: savedOrder.id,
@@ -97,38 +132,47 @@ export class TypeormOrderRepository implements OrderRepository {
   }
 
   async findById(id: string): Promise<OrderDto | null> {
-    const result = await this.dataSource.query(
-      'SELECT id, tickets, total_price as "totalPrice", status, created_at as "createdAt" FROM orders WHERE id = $1',
-      [id],
-    );
+    try {
+      const orderRepository = this.dataSource.getRepository(Order);
+      const order = await orderRepository.findOne({
+        where: { id },
+      });
 
-    return result.length > 0
-      ? {
-          id: result[0].id,
-          tickets: result[0].tickets,
-          totalPrice: Number(result[0].totalPrice),
-          status: result[0].status,
-          createdAt: result[0].createdAt,
-        }
-      : null;
+      if (!order) return null;
+
+      return {
+        id: order.id,
+        tickets: order.tickets,
+        totalPrice: order.totalPrice,
+        status: order.status,
+        createdAt: order.createdAt,
+      };
+    } catch (error) {
+      console.error('Find order by id error:', error);
+      throw error;
+    }
   }
 
   async confirmOrder(id: string): Promise<OrderDto> {
-    const result = await this.dataSource.query(
-      'UPDATE orders SET status = $1 WHERE id = $2 RETURNING id, tickets, total_price as "totalPrice", status, created_at as "createdAt"',
-      ['confirmed', id],
-    );
+    const orderRepository = this.dataSource.getRepository(Order);
+    const order = await orderRepository.findOne({
+      where: { id },
+    });
 
-    if (result.length === 0) {
+    if (!order) {
       throw new Error('Order not found');
     }
 
+    // Обновляем статус заказа
+    order.status = 'confirmed';
+    const updatedOrder = await orderRepository.save(order);
+
     return {
-      id: result[0].id,
-      tickets: result[0].tickets,
-      totalPrice: Number(result[0].totalPrice),
-      status: result[0].status,
-      createdAt: result[0].createdAt,
+      id: updatedOrder.id,
+      tickets: updatedOrder.tickets,
+      totalPrice: updatedOrder.totalPrice,
+      status: updatedOrder.status,
+      createdAt: updatedOrder.createdAt,
     };
   }
 }
