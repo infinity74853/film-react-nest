@@ -34,14 +34,21 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           type: 'postgres' as const,
           host: configService.get('POSTGRES_HOST') || 'localhost',
           port: configService.get('POSTGRES_PORT') || 5432,
-          username: 'prac',
-          password: 'prac',
-          database: 'prac',
+          username: configService.get('POSTGRES_USERNAME') || 'prac',
+          password: configService.get('POSTGRES_PASSWORD') || 'prac',
+          database: configService.get('POSTGRES_DATABASE') || 'prac',
           entities: [TypeormFilm, Schedule, TypeormOrder],
           synchronize: false,
           retryAttempts: 1,
           retryDelay: 1000,
         };
+
+        console.log('Database config:', {
+          host: config.host,
+          port: config.port,
+          username: config.username,
+          database: config.database,
+        });
 
         return config;
       },
