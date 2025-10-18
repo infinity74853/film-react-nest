@@ -33,14 +33,20 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
         const config = {
           type: 'postgres' as const,
           host: configService.get('POSTGRES_HOST') || 'localhost',
-          port: configService.get('POSTGRES_PORT') || 5432,
+          port: parseInt(configService.get('POSTGRES_PORT') || '5432'),
           username: configService.get('POSTGRES_USERNAME') || 'prac',
           password: configService.get('POSTGRES_PASSWORD') || 'prac',
           database: configService.get('POSTGRES_DATABASE') || 'prac',
           entities: [TypeormFilm, Schedule, TypeormOrder],
           synchronize: false,
-          retryAttempts: 1,
+          retryAttempts: 3,
           retryDelay: 1000,
+          // Добавьте для лучшей обработки ошибок
+          extra: {
+            connectionTimeoutMillis: 5000,
+            query_timeout: 5000,
+            statement_timeout: 5000,
+          },
         };
 
         console.log('Database config:', {
