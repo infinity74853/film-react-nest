@@ -1,10 +1,7 @@
+// ДОЛЖНО БЫТЬ САМЫМ ПЕРВЫМ ИМПОРТОМ
 import * as crypto from 'crypto';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { DataSource } from 'typeorm';
-import { importTestData } from './database/seeds/import-test-data';
 
-// Crypto polyfill...
+// Crypto polyfill ДО всех остальных импортов
 if (typeof (global as any).crypto === 'undefined') {
   (global as any).crypto = {
     randomUUID: () => crypto.randomUUID(),
@@ -12,6 +9,13 @@ if (typeof (global as any).crypto === 'undefined') {
   };
   console.log('✅ Crypto polyfill applied successfully');
 }
+
+// Теперь импортируем NestJS и остальные модули
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { DataSource } from 'typeorm';
+import { importTestData } from './database/seeds/import-test-data';
+import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   console.log('🚀 Starting Film API application...');
@@ -34,88 +38,57 @@ async function bootstrap() {
     console.warn('⚠️ Database initialization warning:', error);
   }
 
-  // остальной код...
   app.enableCors({
     origin: true,
     credentials: true,
   });
 
-  // Health check endpoints
-  app.use(
-    '/health',
-    (
-      req: any,
-      res: {
-        json: (arg0: {
-          status: string;
-          service: string;
-          timestamp: string;
-        }) => any;
-      },
-    ) => {
+  // Health check endpoints с правильными типами
+  app.use('/health', (_req: Request, res: Response) => {
+    return res.json({
+      status: 'OK',
+      service: 'Film API',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.use('/api/health', (_req: Request, res: Response) => {
+    return res.json({
+      status: 'operational',
+      message: 'API is running',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.use('/', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path === '/') {
       return res.json({
+        message: 'Film API',
         status: 'OK',
-        service: 'Film API',
         timestamp: new Date().toISOString(),
+        endpoints: {
+          health: 'GET /health',
+          films: 'GET /api/afisha/films',
+          filmSchedule: 'GET /api/afisha/films/:id/schedule',
+          createOrder: 'POST /api/afisha/order',
+        },
       });
-    },
-  );
+    }
+    next();
+  });
 
-  app.use(
-    '/api/health',
-    (
-      req: any,
-      res: {
-        json: (arg0: {
-          status: string;
-          message: string;
-          timestamp: string;
-        }) => any;
-      },
-    ) => {
-      return res.json({
-        status: 'operational',
-        message: 'API is running',
-        timestamp: new Date().toISOString(),
-      });
-    },
-  );
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    await app.close();
+    process.exit(0);
+  });
 
-  app.use(
-    '/',
-    (
-      req: { path: string },
-      res: {
-        json: (arg0: {
-          message: string;
-          status: string;
-          timestamp: string;
-          endpoints: {
-            health: string;
-            films: string;
-            filmSchedule: string;
-            createOrder: string;
-          };
-        }) => any;
-      },
-      next: () => void,
-    ) => {
-      if (req.path === '/') {
-        return res.json({
-          message: 'Film API',
-          status: 'OK',
-          timestamp: new Date().toISOString(),
-          endpoints: {
-            health: 'GET /health',
-            films: 'GET /api/afisha/films',
-            filmSchedule: 'GET /api/afisha/films/:id/schedule',
-            createOrder: 'POST /api/afisha/order',
-          },
-        });
-      }
-      next();
-    },
-  );
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully');
+    await app.close();
+    process.exit(0);
+  });
 
   const port = 3000;
   const host = '0.0.0.0';
