@@ -20,7 +20,9 @@
     "test:e2e": "set NODE_ENV=test&& jest --config ./test/jest-e2e.json",
     "test:e2e:verbose": "set NODE_ENV=test&& jest --config ./test/jest-e2e.json --verbose --no-cache",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
-    "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts"  
+    "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
+    "seed:films": "ts-node -r tsconfig-paths/register src/database/seeds/films.seed.ts",
+    "db:init": "npm run migration:run && npm run seed:films"  
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
