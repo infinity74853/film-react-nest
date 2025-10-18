@@ -23,7 +23,6 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      envFilePath: '.env',
     }),
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'public'),
@@ -32,14 +31,25 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // Все параметры ТОЛЬКО из переменных окружения
+        // Получаем значения и проверяем что они не undefined
+        const host = configService.get('POSTGRES_HOST');
+        const port = configService.get('POSTGRES_PORT');
+        const username = configService.get('POSTGRES_USERNAME');
+        const password = configService.get('POSTGRES_PASSWORD');
+        const database = configService.get('POSTGRES_DATABASE');
+
+        // Если какая-то переменная не задана, выбрасываем ошибку
+        if (!host || !port || !username || !password || !database) {
+          throw new Error('Missing required database configuration');
+        }
+
         const config = {
           type: 'postgres' as const,
-          host: configService.get('POSTGRES_HOST'),
-          port: parseInt(configService.get('POSTGRES_PORT') || '5432'),
-          username: configService.get('POSTGRES_USERNAME'),
-          password: configService.get('POSTGRES_PASSWORD'),
-          database: configService.get('POSTGRES_DATABASE'),
+          host,
+          port: parseInt(port),
+          username,
+          password,
+          database,
           entities: [TypeormFilm, Schedule, TypeormOrder],
           synchronize: false,
           retryAttempts: 3,
@@ -52,18 +62,6 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           username: config.username,
           database: config.database,
         });
-
-        // Проверяем обязательные параметры
-        if (
-          !config.host ||
-          !config.username ||
-          !config.password ||
-          !config.database
-        ) {
-          console.warn(
-            '⚠️  Database configuration is incomplete. Some features may not work.',
-          );
-        }
 
         return config;
       },
