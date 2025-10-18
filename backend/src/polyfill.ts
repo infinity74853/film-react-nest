@@ -1,8 +1,8 @@
-import * as crypto from 'crypto';
+// import * as crypto from 'crypto';
 
-// Полифилл для crypto.randomUUID в Node.js 18
-if (!globalThis.crypto) {
-  globalThis.crypto = {
-    randomUUID: () => crypto.randomUUID(),
-  } as any;
-}
+// // Полифилл для global.crypto
+// if (typeof global.crypto === 'undefined') {
+//   (global as any).crypto = {
+//     randomUUID: () => crypto.randomUUID(),
+//   };
+// }
