@@ -10,8 +10,6 @@ export class TypeormOrderRepository implements OrderRepository {
   constructor(private dataSource: DataSource) {}
 
   async create(orderData: CreateOrderDto): Promise<OrderDto> {
-    console.log('Received order data:', JSON.stringify(orderData, null, 2));
-
     if (!orderData.tickets || orderData.tickets.length === 0) {
       throw new Error('No tickets provided');
     }
@@ -23,8 +21,6 @@ export class TypeormOrderRepository implements OrderRepository {
     await queryRunner.startTransaction();
 
     try {
-      console.log('Starting order creation for session:', firstTicket.session);
-
       // Используем репозиторий транзакции
       const scheduleRepository = queryRunner.manager.getRepository(Schedule);
       const schedule = await scheduleRepository.findOne({
@@ -34,14 +30,6 @@ export class TypeormOrderRepository implements OrderRepository {
       if (!schedule) {
         throw new Error(`Session not found: ${firstTicket.session}`);
       }
-
-      console.log('Found schedule:', {
-        id: schedule.id,
-        filmId: schedule.filmId,
-        hall: schedule.hall,
-        daytime: schedule.daytime,
-        taken: schedule.taken,
-      });
 
       // Обработка taken - безопасно преобразуем в массив
       let currentTaken: string[] = [];
@@ -63,14 +51,10 @@ export class TypeormOrderRepository implements OrderRepository {
         (seat) => typeof seat === 'string' && /^\d+:\d+$/.test(seat),
       );
 
-      console.log('Processed taken seats:', currentTaken);
-
       const takenSeats = new Set(currentTaken);
       const newSeats = orderData.tickets.map(
         (ticket: TicketDto) => `${ticket.row}:${ticket.seat}`,
       );
-
-      console.log('Requested seats:', newSeats);
 
       // Проверяем, не заняты ли места
       for (const seat of newSeats) {
@@ -85,8 +69,6 @@ export class TypeormOrderRepository implements OrderRepository {
         0,
       );
 
-      console.log('Total price:', totalPrice);
-
       // Создаем заказ через TypeORM
       const orderRepository = queryRunner.manager.getRepository(Order);
       const newOrder = orderRepository.create({
@@ -98,23 +80,14 @@ export class TypeormOrderRepository implements OrderRepository {
         createdAt: new Date(),
       });
 
-      console.log('Creating order...');
       const savedOrder = await orderRepository.save(newOrder);
-      console.log('Order created:', savedOrder.id);
-
       // Обновляем занятые места
       const updatedTaken = [...currentTaken, ...newSeats];
-      console.log('Updating schedule with taken seats:', updatedTaken);
-
       // Обновляем через TypeORM
       schedule.taken = updatedTaken;
       await scheduleRepository.save(schedule);
-
-      console.log('Schedule updated successfully');
-
+      // Фиксируем транзакции в базе данных
       await queryRunner.commitTransaction();
-      console.log('Transaction committed successfully');
-
       return {
         id: savedOrder.id,
         tickets: savedOrder.tickets,

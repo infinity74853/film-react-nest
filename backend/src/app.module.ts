@@ -37,7 +37,7 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
         password: configService.get('POSTGRES_PASSWORD'),
         database: configService.get('POSTGRES_DATABASE') || 'prac',
         entities: [TypeormFilm, Schedule, TypeormOrder],
-        synchronize: false, // ОТКЛЮЧИТЬ синхронизацию
+        synchronize: true, // Включение/отключение синхронизации
       }),
       inject: [ConfigService],
     }),

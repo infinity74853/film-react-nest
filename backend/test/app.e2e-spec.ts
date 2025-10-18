@@ -48,7 +48,6 @@ describe('AppController (e2e)', () => {
       );
 
       if (filmsResponse.body.items.length === 0) {
-        console.log('No films found, skipping schedule test');
         return;
       }
 
@@ -82,7 +81,6 @@ describe('AppController (e2e)', () => {
       );
 
       if (filmsResponse.body.items.length === 0) {
-        console.log('No films found, skipping order test');
         return;
       }
 
@@ -93,7 +91,6 @@ describe('AppController (e2e)', () => {
       );
 
       if (scheduleResponse.body.items.length === 0) {
-        console.log('No schedules found, skipping order test');
         return;
       }
 
@@ -137,7 +134,7 @@ describe('AppController (e2e)', () => {
   describe('Static content', () => {
     it('/api/afisha/films/images/:filename (GET) - should serve images', () => {
       return request(app.getHttpServer())
-        .get('/api/afisha/films/images/bg6s.jpg') // Добавь films в путь
+        .get('/api/afisha/films/images/bg6s.jpg')
         .expect(200)
         .expect((res: request.Response) => {
           expect(res.headers['content-type']).toMatch(/image/);

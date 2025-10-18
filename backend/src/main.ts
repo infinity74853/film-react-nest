@@ -1,26 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { Request, Response, NextFunction } from 'express';
 
-async function bootstrapTest() {
-  const app = await NestFactory.create(AppModule, {
-    logger: false, // Отключаем логи для тестов
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    credentials: true,
   });
 
-  app.enableCors();
-
-  // Простой health endpoint
-  app.getHttpAdapter().get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  app.use('/', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path === '/') {
+      return res.json({
+        message: 'Film API',
+        status: 'OK',
+      });
+    }
+    next();
   });
 
   await app.listen(3000);
-  console.log('Test application started on port 3000');
-  return app;
 }
-
-// Запускаем только если файл вызван напрямую
-if (require.main === module) {
-  bootstrapTest();
-}
-
-export { bootstrapTest };
+bootstrap();
