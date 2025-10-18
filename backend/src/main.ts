@@ -19,6 +19,7 @@ async function bootstrap() {
     next();
   });
 
-  await app.listen(3000);
+  // Слушать на 0.0.0.0 вместо localhost
+  await app.listen(3000, '0.0.0.0');
 }
 bootstrap();

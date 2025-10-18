@@ -25,10 +25,8 @@ export class FilmsService {
       const films = await this.filmsRepository.findAll();
       return { total: films.length, items: films };
     } catch (error: unknown) {
-      console.error(
-        'FilmsService error:',
-        error instanceof Error ? error.message : error,
-      );
+      console.error('Database error:', error);
+      // Возвращаем пустой массив вместо ошибки
       return { total: 0, items: [] };
     }
   }
