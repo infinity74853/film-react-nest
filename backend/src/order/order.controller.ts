@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Param, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Get,
+  BadRequestException,
+} from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto, OrderDto } from './dto/order.dto';
 
@@ -8,7 +15,12 @@ export class OrderController {
 
   @Post()
   async createOrder(@Body() createOrderDto: CreateOrderDto) {
-    return await this.orderService.createOrder(createOrderDto);
+    try {
+      return await this.orderService.createOrder(createOrderDto);
+    } catch (error) {
+      console.error('Order creation error:', error);
+      throw new BadRequestException('Invalid order data');
+    }
   }
 
   @Post(':id/confirm')
