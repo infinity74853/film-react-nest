@@ -34,9 +34,9 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           type: 'postgres' as const,
           host: configService.get('POSTGRES_HOST') || 'localhost',
           port: configService.get('POSTGRES_PORT') || 5432,
-          username: 'prac',
-          password: '', // ПУСТОЙ ПАРОЛЬ
-          database: 'prac',
+          username: '',
+          password: '',
+          database: '',
           entities: [TypeormFilm, Schedule, TypeormOrder],
           synchronize: false,
           retryAttempts: 1,
