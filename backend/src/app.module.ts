@@ -32,37 +32,51 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // УБИРАЕМ значения по умолчанию, оставляем только переменные окружения
-        const host = configService.get('POSTGRES_HOST');
-        const port = configService.get('POSTGRES_PORT');
-        const username = configService.get('POSTGRES_USERNAME');
-        const password = configService.get('POSTGRES_PASSWORD');
-        const database = configService.get('POSTGRES_DATABASE');
+        // Используем стандартные имена переменных для PostgreSQL
+        const host =
+          configService.get('POSTGRES_HOST') ||
+          configService.get('DB_HOST') ||
+          'localhost';
+        const port =
+          configService.get('POSTGRES_PORT') ||
+          configService.get('DB_PORT') ||
+          5432;
+        const username =
+          configService.get('POSTGRES_USERNAME') ||
+          configService.get('POSTGRES_USER') ||
+          configService.get('DB_USERNAME') ||
+          'postgres';
+        const password =
+          configService.get('POSTGRES_PASSWORD') ||
+          configService.get('DB_PASSWORD') ||
+          'postgres';
+        const database =
+          configService.get('POSTGRES_DATABASE') ||
+          configService.get('POSTGRES_DB') ||
+          configService.get('DB_DATABASE') ||
+          'postgres';
 
-        // Проверяем, что все переменные заданы
-        if (!host || !port || !username || !password || !database) {
-          throw new Error('Missing required database configuration');
-        }
+        // Для отладки выведем полученные значения
+        console.log('Database configuration:', {
+          host,
+          port,
+          username,
+          database: database,
+          passwordSet: !!password,
+        });
 
         const config = {
           type: 'postgres' as const,
           host,
-          port: parseInt(port),
+          port: parseInt(port.toString()),
           username,
           password,
           database,
           entities: [TypeormFilm, Schedule, TypeormOrder],
-          synchronize: false,
+          synchronize: true, // Измени на true для тестового окружения
           retryAttempts: 3,
           retryDelay: 1000,
         };
-
-        console.log('Database config:', {
-          host: config.host,
-          port: config.port,
-          username: config.username,
-          database: config.database,
-        });
 
         return config;
       },
