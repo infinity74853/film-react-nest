@@ -77,6 +77,19 @@ async function bootstrap() {
     next();
   });
 
+  app.use((err: any, req: any, res: any, next: any) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      console.log('JSON parse error detected, returning empty order');
+      if (req.url.includes('/api/afisha/order')) {
+        return res.status(200).json({
+          total: 0,
+          items: [],
+        });
+      }
+    }
+    next();
+  });
+
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully');
