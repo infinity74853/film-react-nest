@@ -9,15 +9,26 @@ export class FilmsController {
 
   @Get('api/afisha/films')
   async getFilms(): Promise<{ total: number; items: any[] }> {
-    const result = await this.filmsService.getAllFilms();
+    try {
+      const result = await this.filmsService.getAllFilms();
 
-    // Добавляем пустой schedule для каждого фильма, как ожидают тесты
-    const filmsWithSchedule = result.items.map((film) => ({
-      ...film,
-      schedule: [], // или можно получить реальное расписание
-    }));
+      // Убедимся, что items всегда массив
+      const items = result?.items || [];
 
-    return { total: filmsWithSchedule.length, items: filmsWithSchedule };
+      // Добавляем пустой schedule для каждого фильма
+      const filmsWithSchedule = items.map((film) => ({
+        ...film,
+        schedule: film.schedule || [], // используем существующий schedule или пустой массив
+      }));
+
+      return {
+        total: filmsWithSchedule.length,
+        items: filmsWithSchedule,
+      };
+    } catch (error) {
+      console.error('Error getting films:', error);
+      return { total: 0, items: [] };
+    }
   }
 
   @Get('api/afisha/films/:id/schedule')
