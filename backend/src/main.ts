@@ -1,20 +1,17 @@
 import * as crypto from 'crypto';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { DataSource } from 'typeorm';
+import { importTestData } from './database/seeds/import-test-data';
 
-// Полифилл для crypto ДО всех импортов NestJS
+// Crypto polyfill...
 if (typeof (global as any).crypto === 'undefined') {
   (global as any).crypto = {
     randomUUID: () => crypto.randomUUID(),
     getRandomValues: (array: any) => crypto.randomFillSync(array),
   };
   console.log('✅ Crypto polyfill applied successfully');
-} else {
-  console.log('✅ Crypto is already available');
 }
-
-// Теперь импортируем NestJS
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   console.log('🚀 Starting Film API application...');
@@ -23,57 +20,102 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug'],
   });
 
+  // Инициализация базы данных с тестовыми данными
+  try {
+    console.log('🗄️ Initializing database...');
+    const dataSource = app.get(DataSource);
+
+    // Даем время для подключения к БД
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    await importTestData(dataSource);
+    console.log('✅ Database initialization completed');
+  } catch (error) {
+    console.warn('⚠️ Database initialization warning:', error);
+  }
+
+  // остальной код...
   app.enableCors({
     origin: true,
     credentials: true,
   });
 
   // Health check endpoints
-  app.use('/health', (req: Request, res: Response) => {
-    return res.json({
-      status: 'OK',
-      service: 'Film API',
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  app.use('/api/health', (req: Request, res: Response) => {
-    return res.json({
-      status: 'operational',
-      message: 'API is running',
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  app.use('/', (req: Request, res: Response, next: NextFunction) => {
-    if (req.path === '/') {
+  app.use(
+    '/health',
+    (
+      req: any,
+      res: {
+        json: (arg0: {
+          status: string;
+          service: string;
+          timestamp: string;
+        }) => any;
+      },
+    ) => {
       return res.json({
-        message: 'Film API',
         status: 'OK',
+        service: 'Film API',
         timestamp: new Date().toISOString(),
-        endpoints: {
-          health: 'GET /health',
-          films: 'GET /api/afisha/films',
-          filmSchedule: 'GET /api/afisha/films/:id/schedule',
-          createOrder: 'POST /api/afisha/order',
-        },
       });
-    }
-    next();
-  });
+    },
+  );
 
-  // Graceful shutdown
-  process.on('SIGTERM', async () => {
-    console.log('SIGTERM received, shutting down gracefully');
-    await app.close();
-    process.exit(0);
-  });
+  app.use(
+    '/api/health',
+    (
+      req: any,
+      res: {
+        json: (arg0: {
+          status: string;
+          message: string;
+          timestamp: string;
+        }) => any;
+      },
+    ) => {
+      return res.json({
+        status: 'operational',
+        message: 'API is running',
+        timestamp: new Date().toISOString(),
+      });
+    },
+  );
 
-  process.on('SIGINT', async () => {
-    console.log('SIGINT received, shutting down gracefully');
-    await app.close();
-    process.exit(0);
-  });
+  app.use(
+    '/',
+    (
+      req: { path: string },
+      res: {
+        json: (arg0: {
+          message: string;
+          status: string;
+          timestamp: string;
+          endpoints: {
+            health: string;
+            films: string;
+            filmSchedule: string;
+            createOrder: string;
+          };
+        }) => any;
+      },
+      next: () => void,
+    ) => {
+      if (req.path === '/') {
+        return res.json({
+          message: 'Film API',
+          status: 'OK',
+          timestamp: new Date().toISOString(),
+          endpoints: {
+            health: 'GET /health',
+            films: 'GET /api/afisha/films',
+            filmSchedule: 'GET /api/afisha/films/:id/schedule',
+            createOrder: 'POST /api/afisha/order',
+          },
+        });
+      }
+      next();
+    },
+  );
 
   const port = 3000;
   const host = '0.0.0.0';
