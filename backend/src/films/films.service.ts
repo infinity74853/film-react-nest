@@ -25,10 +25,7 @@ export class FilmsService {
       const films = await this.filmsRepository.findAll();
       return { total: films.length, items: films };
     } catch (error: unknown) {
-      console.error(
-        'FilmsService error:',
-        error instanceof Error ? error.message : error,
-      );
+      console.error('Database connection error, returning empty array:', error);
       return { total: 0, items: [] };
     }
   }
@@ -80,25 +77,6 @@ export class FilmsService {
         message: 'Internal server error',
         error: error instanceof Error ? error.message : String(error),
         filename: filename,
-      };
-    }
-  }
-
-  async debugMongo(): Promise<
-    | { success: boolean; count: number; films: FilmDto[] }
-    | { success: boolean; error: string }
-  > {
-    try {
-      const films = await this.filmsRepository.findAll();
-      return { success: true, count: films.length, films: films.slice(0, 2) };
-    } catch (error: unknown) {
-      console.error(
-        'Debug endpoint error:',
-        error instanceof Error ? error.message : error,
-      );
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
       };
     }
   }

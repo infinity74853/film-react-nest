@@ -1,73 +1,104 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as path from 'path';
 import { AppController } from './app.controller';
-import { AppService } from './app.service'; // Добавить этот импорт
+import { AppService } from './app.service';
 
 import { FilmsController } from './films/films.controller';
 import { OrderController } from './order/order.controller';
 import { FilmsService } from './films/films.service';
 import { OrderService } from './order/order.service';
 
-// Memory репозитории
-import { MemoryFilmsRepository } from './repository/memory-films.repository';
-import { MemoryOrderRepository } from './repository/memory-order.repository';
-
-// MongoDB схемы и репозитории
-import { Film, FilmSchema } from './repository/mongoose/schemas/film.schema';
-import { Order, OrderSchema } from './repository/mongoose/schemas/order.schema';
-import { MongooseFilmsRepository } from './repository/mongoose/mongoose-films.repository';
-import { MongooseOrderRepository } from './repository/mongoose/mongoose-order.repository';
+// TypeORM сущности и репозитории
+import { Film as TypeormFilm } from './repository/typeorm/entities/film.entity';
+import { Schedule } from './repository/typeorm/entities/schedule.entity';
+import { Order as TypeormOrder } from './repository/typeorm/entities/order.entity';
+import { TypeormFilmsRepository } from './repository/typeorm/typeorm-films.repository';
+import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repository';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      envFilePath: '.env',
     }),
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'public'),
+      serveRoot: '/content/afisha',
+      exclude: ['/api/*'],
     }),
-    MongooseModule.forRoot(
-      process.env.DATABASE_URL || 'mongodb://localhost:27017/practicum',
-    ),
-    MongooseModule.forFeature([{ name: Film.name, schema: FilmSchema }]),
-    MongooseModule.forFeature([{ name: Order.name, schema: OrderSchema }]),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        // Используем стандартные имена переменных для PostgreSQL
+        const host =
+          configService.get('POSTGRES_HOST') ||
+          configService.get('DB_HOST') ||
+          'localhost';
+        const port =
+          configService.get('POSTGRES_PORT') ||
+          configService.get('DB_PORT') ||
+          5432;
+        const username =
+          configService.get('POSTGRES_USERNAME') ||
+          configService.get('POSTGRES_USER') ||
+          configService.get('DB_USERNAME') ||
+          'postgres';
+        const password =
+          configService.get('POSTGRES_PASSWORD') ||
+          configService.get('DB_PASSWORD') ||
+          'postgres';
+        const database =
+          configService.get('POSTGRES_DATABASE') ||
+          configService.get('POSTGRES_DB') ||
+          configService.get('DB_DATABASE') ||
+          'postgres';
+
+        // Для отладки выведем полученные значения
+        console.log('Database configuration:', {
+          host,
+          port,
+          username,
+          database: database,
+          passwordSet: !!password,
+        });
+
+        const config = {
+          type: 'postgres' as const,
+          host,
+          port: parseInt(port.toString()),
+          username,
+          password,
+          database,
+          entities: [TypeormFilm, Schedule, TypeormOrder],
+          synchronize: false, // Измени на true для тестового окружения
+          retryAttempts: 3,
+          retryDelay: 1000,
+        };
+
+        return config;
+      },
+      inject: [ConfigService],
+    }),
+    TypeOrmModule.forFeature([TypeormFilm, Schedule, TypeormOrder]),
   ],
   controllers: [AppController, FilmsController, OrderController],
   providers: [
-    AppService, // Добавить этот провайдер
+    AppService,
     FilmsService,
     OrderService,
-    MemoryFilmsRepository,
-    MemoryOrderRepository,
-    MongooseFilmsRepository,
-    MongooseOrderRepository,
+    TypeormFilmsRepository,
+    TypeormOrderRepository,
     {
       provide: 'FilmsRepository',
-      useFactory: (
-        memoryRepo: MemoryFilmsRepository,
-        mongoRepo: MongooseFilmsRepository,
-      ) => {
-        return process.env.DATABASE_DRIVER === 'mongodb'
-          ? mongoRepo
-          : memoryRepo;
-      },
-      inject: [MemoryFilmsRepository, MongooseFilmsRepository],
+      useClass: TypeormFilmsRepository,
     },
     {
       provide: 'OrderRepository',
-      useFactory: (
-        memoryRepo: MemoryOrderRepository,
-        mongoRepo: MongooseOrderRepository,
-      ) => {
-        return process.env.DATABASE_DRIVER === 'mongodb'
-          ? mongoRepo
-          : memoryRepo;
-      },
-      inject: [MemoryOrderRepository, MongooseOrderRepository],
+      useClass: TypeormOrderRepository,
     },
   ],
 })
