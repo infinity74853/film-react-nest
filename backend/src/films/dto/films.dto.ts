@@ -9,7 +9,6 @@ export class FilmDto {
   description!: string;
   image!: string;
   cover!: string;
-  schedule?: ScheduleDto[];
 }
 
 export class ScheduleDto {
