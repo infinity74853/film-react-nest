@@ -29,18 +29,29 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
       serveRoot: '/content/afisha',
     }),
     TypeOrmModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('POSTGRES_HOST') || 'localhost',
-        port: configService.get('POSTGRES_PORT') || 5432,
-        username: configService.get('POSTGRES_USERNAME') || 'postgres',
-        password: configService.get('POSTGRES_PASSWORD') || 'postgres',
-        database: configService.get('POSTGRES_DATABASE') || 'test',
-        entities: [TypeormFilm, Schedule, TypeormOrder],
-        synchronize: false,
-        retryAttempts: 3,
-        retryDelay: 3000,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const config = {
+          type: 'postgres' as const,
+          host: configService.get('POSTGRES_HOST') || 'localhost',
+          port: configService.get('POSTGRES_PORT') || 5432,
+          username: configService.get('POSTGRES_USERNAME') || 'postgres',
+          password: configService.get('POSTGRES_PASSWORD') || 'password',
+          database: configService.get('POSTGRES_DATABASE') || 'films',
+          entities: [TypeormFilm, Schedule, TypeormOrder],
+          synchronize: false,
+          // Продолжать работу даже если БД недоступна
+          retryAttempts: 2,
+          retryDelay: 1000,
+        };
+
+        console.log('Database config:', {
+          host: config.host,
+          port: config.port,
+          database: config.database,
+        });
+
+        return config;
+      },
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([TypeormFilm, Schedule, TypeormOrder]),
