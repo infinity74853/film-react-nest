@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { CreateOrderDto, OrderDto, TicketDto } from './dto/order.dto';
 import { OrderRepository } from '../repository/order.repository.interface';
 
@@ -14,33 +14,19 @@ export class OrderService {
   ) {}
 
   async createOrder(orderData: CreateOrderDto): Promise<OrderResponse> {
-    // Мягкая валидация для тестов
+    // Валидация обязательных полей
     if (!orderData.tickets || orderData.tickets.length === 0) {
-      // Возвращаем пустой успешный ответ для тестов
-      return {
-        total: 0,
-        items: [],
-      };
+      throw new BadRequestException('Tickets are required');
     }
 
-    // Фильтруем валидные билеты
-    const validTickets = orderData.tickets.filter(
-      (ticket) => ticket && ticket.film && ticket.session,
-    );
-
-    if (validTickets.length === 0) {
-      return {
-        total: 0,
-        items: [],
-      };
+    for (const ticket of orderData.tickets) {
+      if (!ticket.film || !ticket.session || !ticket.price) {
+        throw new BadRequestException('All ticket fields are required');
+      }
     }
 
     try {
-      const order = await this.orderRepository.create({
-        ...orderData,
-        tickets: validTickets,
-      });
-
+      const order = await this.orderRepository.create(orderData);
       return {
         total: order.tickets.length,
         items: order.tickets.map((ticket) => ({
@@ -54,12 +40,11 @@ export class OrderService {
         })),
       };
     } catch (error) {
-      console.error('Order creation error:', error);
-      // Для тестов возвращаем успешную структуру даже при ошибках
-      return {
-        total: 0,
-        items: [],
-      };
+      if (error instanceof Error) {
+        throw new BadRequestException(error.message);
+      } else {
+        throw new BadRequestException('Unknown error occurred');
+      }
     }
   }
 
