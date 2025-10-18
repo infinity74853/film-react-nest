@@ -34,24 +34,14 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           type: 'postgres' as const,
           host: configService.get('POSTGRES_HOST') || 'localhost',
           port: configService.get('POSTGRES_PORT') || 5432,
-          // ИСПРАВЬ ЭТИ ЗНАЧЕНИЯ:
-          username: configService.get('POSTGRES_USERNAME') || 'prac',
-          password: configService.get('POSTGRES_PASSWORD') || 'prac',
-          database: configService.get('POSTGRES_DATABASE') || 'prac',
+          username: 'prac',
+          password: 'prac',
+          database: 'prac',
           entities: [TypeormFilm, Schedule, TypeormOrder],
           synchronize: false,
-          retryAttempts: 2,
+          retryAttempts: 1,
           retryDelay: 1000,
-          // Добавь эту опцию для продолжения работы даже если БД недоступна
-          continueOnError: true,
         };
-
-        console.log('Database config:', {
-          host: config.host,
-          port: config.port,
-          username: config.username,
-          database: config.database,
-        });
 
         return config;
       },
