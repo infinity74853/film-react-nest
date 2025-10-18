@@ -23,6 +23,7 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      envFilePath: '.env',
     }),
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'public'),
@@ -31,14 +32,14 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // Получаем значения и проверяем что они не undefined
+        // УБИРАЕМ значения по умолчанию, оставляем только переменные окружения
         const host = configService.get('POSTGRES_HOST');
         const port = configService.get('POSTGRES_PORT');
         const username = configService.get('POSTGRES_USERNAME');
         const password = configService.get('POSTGRES_PASSWORD');
         const database = configService.get('POSTGRES_DATABASE');
 
-        // Если какая-то переменная не задана, выбрасываем ошибку
+        // Проверяем, что все переменные заданы
         if (!host || !port || !username || !password || !database) {
           throw new Error('Missing required database configuration');
         }
