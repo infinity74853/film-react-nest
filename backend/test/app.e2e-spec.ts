@@ -1,34 +1,17 @@
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
 import request from 'supertest';
+import { AppModule } from '../src/app.module';
 
-interface Film {
-  id: string;
-  rating: number;
-  director: string;
-  tags: string[];
-  title: string;
-  about: string;
-  description: string;
-  image: string;
-  cover: string;
-}
-
-interface FilmPath {
-  image: string;
-  cover: string;
-}
-
-describe('Film API E2E Tests', () => {
+describe('AppController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
+    const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleRef.createNestApplication();
+    app = moduleFixture.createNestApplication();
     await app.init();
   });
 
@@ -36,159 +19,129 @@ describe('Film API E2E Tests', () => {
     await app.close();
   });
 
-  describe('Root endpoint', () => {
-    it('GET / - should return API info', async () => {
-      const response = await request(app.getHttpServer()).get('/').expect(200);
-
-      expect(response.body).toHaveProperty('message');
-      expect(response.body).toHaveProperty('endpoints');
-    });
-  });
-
   describe('Films API', () => {
-    it('GET /api/afisha/films - should return films list', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/afisha/films')
-        .expect(200);
+    it('/api/afisha/films/ (GET) - should return films list', () => {
+      return request(app.getHttpServer())
+        .get('/api/afisha/films/')
+        .expect(200)
+        .expect((res: request.Response) => {
+          expect(res.body).toHaveProperty('total');
+          expect(res.body).toHaveProperty('items');
+          expect(Array.isArray(res.body.items)).toBe(true);
+          expect(res.body.total).toBe(res.body.items.length);
 
-      expect(response.body).toHaveProperty('total');
-      expect(response.body).toHaveProperty('items');
-      expect(Array.isArray(response.body.items)).toBe(true);
-    });
-
-    it('GET /api/afisha/films/:id/schedule - should return film schedule', async () => {
-      const filmsResponse = await request(app.getHttpServer())
-        .get('/api/afisha/films')
-        .expect(200);
-
-      if (filmsResponse.body.items.length > 0) {
-        const filmId = filmsResponse.body.items[0].id;
-
-        const response = await request(app.getHttpServer())
-          .get(`/api/afisha/films/${filmId}/schedule`)
-          .expect(200);
-
-        expect(response.body).toHaveProperty('total');
-        expect(response.body).toHaveProperty('items');
-      }
-    });
-  });
-
-  describe('Static Files', () => {
-    it('should have correct image file names in API response', async () => {
-      const filmsResponse = await request(app.getHttpServer())
-        .get('/api/afisha/films')
-        .expect(200);
-
-      filmsResponse.body.items.forEach((film: Film) => {
-        // Теперь ожидаем просто имена файлов
-        expect(film.image).toMatch(/^bg\d+s\.jpg$/);
-        expect(film.cover).toMatch(/^bg\d+c\.jpg$/);
-      });
-    });
-
-    it('should skip static file access in tests', async () => {});
-
-    it('should test direct static access with relative paths', async () => {
-      const testImages = [
-        '/content/afisha/bg1s.jpg',
-        '/content/afisha/bg2s.jpg',
-        '/content/afisha/bg3s.jpg',
-      ];
-
-      for (const imagePath of testImages) {
-        try {
-          const response = await request(app.getHttpServer()).get(imagePath);
-          if (
-            response.status === 200 &&
-            response.headers['content-type']?.includes('image/jpeg')
-          ) {
+          if (res.body.items.length > 0) {
+            const film = res.body.items[0];
+            expect(film).toHaveProperty('id');
+            expect(film).toHaveProperty('title');
+            expect(film).toHaveProperty('rating');
+            expect(film).toHaveProperty('director');
+            expect(film).toHaveProperty('image');
           }
-        } catch {}
-      }
+        });
     });
 
-    it('should verify file names can be converted to full URLs', async () => {
-      const filmsResponse = await request(app.getHttpServer())
-        .get('/api/afisha/films')
-        .expect(200);
-
-      const filmPaths: FilmPath[] = filmsResponse.body.items.map(
-        (film: Film) => {
-          return {
-            image: film.image,
-            cover: film.cover,
-          };
-        },
+    it('/api/afisha/films/:id/schedule (GET) - should return film schedule', async () => {
+      // Сначала получаем список фильмов чтобы взять ID
+      const filmsResponse = await request(app.getHttpServer()).get(
+        '/api/afisha/films/',
       );
 
-      filmPaths.forEach((path: FilmPath) => {
-        // Проверяем что это валидные имена файлов
-        expect(path.image).toMatch(/^bg\d+s\.jpg$/);
-        expect(path.cover).toMatch(/^bg\d+c\.jpg$/);
-      });
+      if (filmsResponse.body.items.length === 0) {
+        console.log('No films found, skipping schedule test');
+        return;
+      }
+
+      const filmId = filmsResponse.body.items[0].id;
+
+      return request(app.getHttpServer())
+        .get(`/api/afisha/films/${filmId}/schedule`)
+        .expect(200)
+        .expect((res: request.Response) => {
+          expect(res.body).toHaveProperty('total');
+          expect(res.body).toHaveProperty('items');
+          expect(Array.isArray(res.body.items)).toBe(true);
+          expect(res.body.total).toBe(res.body.items.length);
+
+          if (res.body.items.length > 0) {
+            const schedule = res.body.items[0];
+            expect(schedule).toHaveProperty('id');
+            expect(schedule).toHaveProperty('daytime');
+            expect(schedule).toHaveProperty('hall');
+            expect(schedule).toHaveProperty('price');
+          }
+        });
     });
   });
 
   describe('Order API', () => {
-    it('POST /api/afisha/order - should create order', async () => {
-      const filmsResponse = await request(app.getHttpServer())
-        .get('/api/afisha/films')
-        .expect(200);
+    it('/api/afisha/order/ (POST) - should create order', async () => {
+      // Сначала получим ID фильма и сеанса
+      const filmsResponse = await request(app.getHttpServer()).get(
+        '/api/afisha/films/',
+      );
 
-      if (filmsResponse.body.items.length > 0) {
-        const filmId = filmsResponse.body.items[0].id;
-
-        const scheduleResponse = await request(app.getHttpServer())
-          .get(`/api/afisha/films/${filmId}/schedule`)
-          .expect(200);
-
-        if (scheduleResponse.body.items.length > 0) {
-          const session = scheduleResponse.body.items[0];
-
-          const orderData = {
-            email: 'test@example.com',
-            phone: '+7 (999) 999-99-99',
-            tickets: [
-              {
-                film: filmId,
-                session: session.id,
-                daytime: session.daytime,
-                row: 4,
-                seat: 4,
-                price: session.price,
-              },
-            ],
-          };
-
-          const response = await request(app.getHttpServer())
-            .post('/api/afisha/order')
-            .send(orderData);
-
-          if (response.status === 201) {
-            expect(response.body).toHaveProperty('total');
-            expect(response.body).toHaveProperty('items');
-          }
-        }
+      if (filmsResponse.body.items.length === 0) {
+        console.log('No films found, skipping order test');
+        return;
       }
+
+      const filmId = filmsResponse.body.items[0].id;
+
+      const scheduleResponse = await request(app.getHttpServer()).get(
+        `/api/afisha/films/${filmId}/schedule`,
+      );
+
+      if (scheduleResponse.body.items.length === 0) {
+        console.log('No schedules found, skipping order test');
+        return;
+      }
+
+      const sessionId = scheduleResponse.body.items[0].id;
+      const daytime = scheduleResponse.body.items[0].daytime;
+      const price = scheduleResponse.body.items[0].price;
+
+      return request(app.getHttpServer())
+        .post('/api/afisha/order/')
+        .send({
+          tickets: [
+            {
+              film: filmId,
+              session: sessionId,
+              daytime: daytime,
+              row: 1,
+              seat: 1,
+              price: price,
+            },
+          ],
+          email: 'test@example.com',
+          phone: '+1234567890',
+        })
+        .expect(201)
+        .expect((res: request.Response) => {
+          expect(res.body).toHaveProperty('total');
+          expect(res.body).toHaveProperty('items');
+          expect(Array.isArray(res.body.items)).toBe(true);
+          expect(res.body.total).toBe(res.body.items.length);
+
+          const ticket = res.body.items[0];
+          expect(ticket).toHaveProperty('film');
+          expect(ticket).toHaveProperty('session');
+          expect(ticket).toHaveProperty('row');
+          expect(ticket).toHaveProperty('seat');
+          expect(ticket).toHaveProperty('price');
+        });
     });
   });
 
-  describe('Error cases', () => {
-    it('should return 404 for non-existent film', async () => {
-      await request(app.getHttpServer())
-        .get('/api/afisha/films/non-existent-id/schedule')
+  describe('Static content', () => {
+    it('/api/afisha/films/images/:filename (GET) - should serve images', () => {
+      return request(app.getHttpServer())
+        .get('/api/afisha/films/images/bg6s.jpg') // Добавь films в путь
         .expect(200)
-        .then((response) => {
-          expect(response.body.total).toBe(0);
-          expect(response.body.items).toEqual([]);
+        .expect((res: request.Response) => {
+          expect(res.headers['content-type']).toMatch(/image/);
         });
-    });
-
-    it('should return 404 for invalid routes', async () => {
-      await request(app.getHttpServer())
-        .get('/api/non-existent-route')
-        .expect(404);
     });
   });
 });

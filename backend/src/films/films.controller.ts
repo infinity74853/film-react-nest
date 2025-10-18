@@ -3,25 +3,38 @@ import { Response } from 'express';
 import { FilmsService } from './films.service';
 import { FilmDto, ScheduleDto } from './dto/films.dto';
 
-@Controller('api/afisha/films')
+@Controller() // Убрал префикс чтобы можно было разные пути использовать
 export class FilmsController {
   constructor(private readonly filmsService: FilmsService) {}
 
-  @Get()
+  @Get('api/afisha/films')
   async getFilms(): Promise<{ total: number; items: FilmDto[] }> {
     return await this.filmsService.getAllFilms();
   }
 
-  @Get(':id/schedule')
+  @Get('api/afisha/films/:id/schedule')
   async getFilmSchedule(
     @Param('id') id: string,
   ): Promise<{ total: number; items: ScheduleDto[] }> {
     return await this.filmsService.getFilmSchedule(id);
   }
 
-  // Эндпоинт-прокси для картинок
-  @Get('images/:filename')
+  // Для API
+  @Get('api/afisha/films/images/:filename')
   async getImage(@Param('filename') filename: string, @Res() res: Response) {
+    return this.serveImage(filename, res);
+  }
+
+  // Для фронтенда
+  @Get('content/afisha/:filename')
+  async getContentImage(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    return this.serveImage(filename, res);
+  }
+
+  private async serveImage(filename: string, res: Response) {
     const result = await this.filmsService.getImage(filename);
 
     if (result.success && result.filename && result.rootPath) {

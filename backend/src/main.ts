@@ -1,37 +1,26 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Request, Response, NextFunction } from 'express';
 
-async function bootstrap() {
-  try {
-    console.log('Starting application...');
-    const app = await NestFactory.create(AppModule);
+async function bootstrapTest() {
+  const app = await NestFactory.create(AppModule, {
+    logger: false, // Отключаем логи для тестов
+  });
 
-    app.enableCors({
-      origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-      credentials: true,
-    });
+  app.enableCors();
 
-    app.use('/', (req: Request, res: Response, next: NextFunction) => {
-      if (req.path === '/') {
-        return res.json({
-          message: 'Film API',
-          status: 'OK',
-        });
-      }
-      next();
-    });
+  // Простой health endpoint
+  app.getHttpAdapter().get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
-    // Слушаем на всех интерфейсах, а не только localhost
-    const port = process.env.PORT || 3000;
-    await app.listen(port, '0.0.0.0');
-
-    console.log(`🚀 Application is running on: http://0.0.0.0:${port}`);
-    console.log(`📱 Local access: http://localhost:${port}`);
-  } catch (error) {
-    console.error('❌ Failed to start application:', error);
-    process.exit(1);
-  }
+  await app.listen(3000);
+  console.log('Test application started on port 3000');
+  return app;
 }
 
-bootstrap();
+// Запускаем только если файл вызван напрямую
+if (require.main === module) {
+  bootstrapTest();
+}
+
+export { bootstrapTest };

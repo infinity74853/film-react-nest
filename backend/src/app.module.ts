@@ -26,6 +26,7 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     }),
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'public'),
+      serveRoot: '/content/afisha',
     }),
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
