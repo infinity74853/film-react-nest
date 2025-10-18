@@ -16,11 +16,22 @@ export class FilmsController {
   async getFilmSchedule(
     @Param('id') id: string,
   ): Promise<{ total: number; items: ScheduleDto[] }> {
-    // Если ID пустой или undefined, возвращаем пустой результат
-    if (!id || id === 'undefined' || id === 'null') {
+    console.log('Film schedule requested for ID:', id);
+
+    // Если ID пустой, возвращаем пустой результат вместо 404
+    if (!id || id === '' || id === 'undefined') {
+      console.log('Empty ID, returning empty schedule');
       return { total: 0, items: [] };
     }
-    return await this.filmsService.getFilmSchedule(id);
+
+    try {
+      const result = await this.filmsService.getFilmSchedule(id);
+      console.log('Schedule result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error getting film schedule:', error);
+      return { total: 0, items: [] };
+    }
   }
 
   // Для API
@@ -35,22 +46,12 @@ export class FilmsController {
     @Param('filename') filename: string,
     @Res() res: Response,
   ) {
-    // Если filename пустой, возвращаем 404 или дефолтное изображение
+    // Если filename пустой, возвращаем дефолтное изображение
     if (!filename || filename === '' || filename === 'undefined') {
-      return res.status(404).json({
-        message: 'Filename is required',
-        statusCode: 404,
-      });
+      console.log('Empty filename, serving default image');
+      filename = 'bg1s.jpg';
     }
     return this.serveImage(filename, res);
-  }
-
-  @Get('content/afisha')
-  async getContentFolder(@Res() res: Response) {
-    return res.status(400).json({
-      message: 'Filename is required for static content',
-      statusCode: 400,
-    });
   }
 
   private async serveImage(filename: string, res: Response) {
