@@ -22,13 +22,10 @@ export class FilmsService {
 
   async getAllFilms(): Promise<{ total: number; items: FilmDto[] }> {
     try {
-      console.log('Fetching films from repository...');
       const films = await this.filmsRepository.findAll();
-      console.log(`Found ${films.length} films`);
       return { total: films.length, items: films };
     } catch (error: unknown) {
-      console.error('Error fetching films:', error);
-      // Возвращаем пустой массив вместо падения приложения
+      console.error('Database connection error, returning empty array:', error);
       return { total: 0, items: [] };
     }
   }
