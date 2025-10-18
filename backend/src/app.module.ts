@@ -53,7 +53,7 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           password,
           database,
           entities: [TypeormFilm, Schedule, TypeormOrder],
-          synchronize: true,
+          synchronize: false,
           retryAttempts: 3,
           retryDelay: 1000,
         };
