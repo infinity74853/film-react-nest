@@ -30,32 +30,21 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     }),
     TypeOrmModule.forRootAsync({
       useFactory: (configService: ConfigService) => {
+        // Пробуем разные комбинации credentials
         const config = {
           type: 'postgres' as const,
           host: configService.get('POSTGRES_HOST') || 'localhost',
           port: parseInt(configService.get('POSTGRES_PORT') || '5432'),
-          username: configService.get('POSTGRES_USERNAME') || 'prac',
-          password: configService.get('POSTGRES_PASSWORD') || 'prac',
-          database: configService.get('POSTGRES_DATABASE') || 'prac',
+          username: configService.get('POSTGRES_USERNAME') || 'postgres', // пробуем postgres
+          password: configService.get('POSTGRES_PASSWORD') || 'postgres', // пробуем postgres
+          database: configService.get('POSTGRES_DATABASE') || 'postgres', // пробуем postgres
           entities: [TypeormFilm, Schedule, TypeormOrder],
           synchronize: false,
-          retryAttempts: 3,
+          retryAttempts: 2, // Уменьшаем попытки
           retryDelay: 1000,
-          // Добавьте для лучшей обработки ошибок
-          extra: {
-            connectionTimeoutMillis: 5000,
-            query_timeout: 5000,
-            statement_timeout: 5000,
-          },
         };
 
-        console.log('Database config:', {
-          host: config.host,
-          port: config.port,
-          username: config.username,
-          database: config.database,
-        });
-
+        console.log('Trying DB config with user:', config.username);
         return config;
       },
       inject: [ConfigService],
