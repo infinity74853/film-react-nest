@@ -23,28 +23,48 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      envFilePath: '.env',
     }),
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'public'),
       serveRoot: '/content/afisha',
     }),
     TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // Пробуем разные комбинации credentials
+        // Все параметры ТОЛЬКО из переменных окружения
         const config = {
           type: 'postgres' as const,
-          host: configService.get('POSTGRES_HOST') || 'localhost',
+          host: configService.get('POSTGRES_HOST'),
           port: parseInt(configService.get('POSTGRES_PORT') || '5432'),
-          username: configService.get('POSTGRES_USERNAME') || 'postgres', // пробуем postgres
-          password: configService.get('POSTGRES_PASSWORD') || 'postgres', // пробуем postgres
-          database: configService.get('POSTGRES_DATABASE') || 'postgres', // пробуем postgres
+          username: configService.get('POSTGRES_USERNAME'),
+          password: configService.get('POSTGRES_PASSWORD'),
+          database: configService.get('POSTGRES_DATABASE'),
           entities: [TypeormFilm, Schedule, TypeormOrder],
           synchronize: false,
-          retryAttempts: 2, // Уменьшаем попытки
+          retryAttempts: 3,
           retryDelay: 1000,
         };
 
-        console.log('Trying DB config with user:', config.username);
+        console.log('Database config:', {
+          host: config.host,
+          port: config.port,
+          username: config.username,
+          database: config.database,
+        });
+
+        // Проверяем обязательные параметры
+        if (
+          !config.host ||
+          !config.username ||
+          !config.password ||
+          !config.database
+        ) {
+          console.warn(
+            '⚠️  Database configuration is incomplete. Some features may not work.',
+          );
+        }
+
         return config;
       },
       inject: [ConfigService],
