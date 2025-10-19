@@ -13,10 +13,10 @@ export class FilmsController {
 
     // ФИЛЬТРУЕМ undefined элементы и добавляем пустой schedule
     const filmsWithSchedule = result.items
-      .filter((film) => film && film.id) // убираем undefined и фильмы без id
+      .filter((film) => film && film.id)
       .map((film) => ({
         ...film,
-        schedule: [], // как ожидают тесты
+        schedule: [],
       }));
 
     return { total: filmsWithSchedule.length, items: filmsWithSchedule };
@@ -26,17 +26,13 @@ export class FilmsController {
   async getFilmSchedule(
     @Param('id') id: string,
   ): Promise<{ total: number; items: ScheduleDto[] }> {
-    console.log('Film schedule requested for ID:', id);
-
     // Если ID пустой, возвращаем пустой результат вместо 404
     if (!id || id === '' || id === 'undefined') {
-      console.log('Empty ID, returning empty schedule');
       return { total: 0, items: [] };
     }
 
     try {
       const result = await this.filmsService.getFilmSchedule(id);
-      console.log('Schedule result:', result);
       return result;
     } catch (error) {
       console.error('Error getting film schedule:', error);

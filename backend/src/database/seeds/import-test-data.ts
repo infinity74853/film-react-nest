@@ -8,24 +8,18 @@ export async function importTestData(dataSource: DataSource) {
   await queryRunner.connect();
 
   try {
-    console.log('📊 Checking database state...');
-
     // Проверяем, есть ли уже данные
     const filmsCount = await queryRunner.query('SELECT COUNT(*) FROM films');
     const filmsExist = parseInt(filmsCount[0].count) > 0;
 
     if (filmsExist) {
-      console.log('✅ Database already contains data, skipping import');
       return;
     }
-
-    console.log('🗃️ Importing test data from SQL files...');
 
     const testDataPath = path.join(process.cwd(), 'test');
 
     // Проверяем существование SQL файлов
     if (!fs.existsSync(path.join(testDataPath, 'prac.films.sql'))) {
-      console.log('❌ SQL files not found, using basic data');
       await initBasicData(dataSource);
       return;
     }
@@ -33,7 +27,6 @@ export async function importTestData(dataSource: DataSource) {
     await queryRunner.startTransaction();
 
     // Импортируем фильмы
-    console.log('🎬 Importing films...');
     const filmsSql = fs.readFileSync(
       path.join(testDataPath, 'prac.films.sql'),
       'utf8',
@@ -41,7 +34,6 @@ export async function importTestData(dataSource: DataSource) {
     await queryRunner.query(filmsSql);
 
     // Импортируем расписания
-    console.log('📅 Importing schedules...');
     const schedulesSql = fs.readFileSync(
       path.join(testDataPath, 'prac.shedules.sql'),
       'utf8',
@@ -49,7 +41,6 @@ export async function importTestData(dataSource: DataSource) {
     await queryRunner.query(schedulesSql);
 
     // Импортируем таблицу orders (если нужно)
-    console.log('🎫 Setting up orders table...');
     const ordersSql = fs.readFileSync(
       path.join(testDataPath, 'prac.orders.sql'),
       'utf8',
@@ -58,25 +49,12 @@ export async function importTestData(dataSource: DataSource) {
 
     await queryRunner.commitTransaction();
 
-    console.log('✅ Test data imported successfully');
-
     // Проверяем результат
-    const finalFilmsCount = await queryRunner.query(
-      'SELECT COUNT(*) FROM films',
-    );
-    const finalSchedulesCount = await queryRunner.query(
-      'SELECT COUNT(*) FROM schedules',
-    );
-
-    console.log(
-      `📊 Imported ${finalFilmsCount[0].count} films and ${finalSchedulesCount[0].count} schedules`,
-    );
   } catch (error) {
     await queryRunner.rollbackTransaction();
     console.error('❌ Error importing test data:', error);
 
     // Пробуем инициализировать базовыми данными
-    console.log('🔄 Trying to initialize with basic data...');
     await initBasicData(dataSource);
   } finally {
     await queryRunner.release();
@@ -107,7 +85,6 @@ async function initBasicData(dataSource: DataSource) {
     `);
 
     await queryRunner.commitTransaction();
-    console.log('✅ Basic test data initialized');
   } catch (error) {
     await queryRunner.rollbackTransaction();
     console.error('❌ Error initializing basic data:', error);

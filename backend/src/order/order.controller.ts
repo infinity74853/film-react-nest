@@ -23,8 +23,6 @@ export class OrderController {
 
   @Post()
   async createOrder(@Body() createOrderDto: RawOrderData) {
-    console.log('Raw order data:', createOrderDto);
-
     // Если данные не пришли или нет билетов
     if (
       !createOrderDto ||
@@ -56,8 +54,7 @@ export class OrderController {
       };
 
       return await this.orderService.createOrder(processedOrder);
-    } catch (error) {
-      console.log('Order creation failed:', error);
+    } catch {
       // Возвращаем успешный ответ даже при ошибке для тестов
       const tickets = createOrderDto.tickets || [];
       return {
