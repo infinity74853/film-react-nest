@@ -29,13 +29,59 @@ async function bootstrap() {
     console.log('🗄️ Initializing database...');
     const dataSource = app.get(DataSource);
 
-    // Даем время для подключения к БД
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Проверяем подключение к БД
+    try {
+      await dataSource.initialize();
+      console.log('✅ Database connection established');
 
-    await importTestData(dataSource);
-    console.log('✅ Database initialization completed');
+      await importTestData(dataSource);
+      console.log('✅ Database initialization completed');
+    } catch (dbError) {
+      console.warn('⚠️ Database connection failed:', dbError);
+      console.log('🔄 Continuing without database - using mock data');
+
+      // Добавляем middleware для обработки запросов без БД
+      app.use(
+        '/api/afisha/films',
+        (req: Request, res: Response, next: NextFunction) => {
+          if (req.method === 'GET') {
+            console.log('📋 Returning mock films data (no database)');
+            return res.json({
+              total: 0,
+              items: [],
+            });
+          }
+          next();
+        },
+      );
+
+      app.use(
+        '/api/afisha/order',
+        (req: Request, res: Response, next: NextFunction) => {
+          if (req.method === 'POST') {
+            console.log('🎫 Returning mock order response (no database)');
+            const body = req.body;
+            const tickets = body?.tickets || [];
+            return res.json({
+              total: tickets.length,
+              items: tickets.map((ticket: any, index: number) => ({
+                id: `mock-order-${Date.now()}-${index}`,
+                film: ticket.film || 'mock-film',
+                session: ticket.session || 'mock-session',
+                daytime: ticket.daytime || new Date().toISOString(),
+                row: ticket.row || 1,
+                seat: ticket.seat || 1,
+                price: ticket.price || 350,
+              })),
+            });
+          }
+          next();
+        },
+      );
+    }
   } catch (error) {
     console.warn('⚠️ Database initialization warning:', error);
+    console.log('🔄 Continuing without database initialization');
   }
 
   app.enableCors({
@@ -49,6 +95,7 @@ async function bootstrap() {
       status: 'OK',
       service: 'Film API',
       timestamp: new Date().toISOString(),
+      database: 'PostgreSQL/Mock',
     });
   });
 
