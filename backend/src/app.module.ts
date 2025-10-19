@@ -56,6 +56,16 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           configService.get('POSTGRES_DB') ||
           configService.get('DB_DATABASE') ||
           'postgres';
+
+        // Для отладки выведем полученные значения
+        console.log('Database configuration:', {
+          host,
+          port,
+          username,
+          database: database,
+          passwordSet: !!password,
+        });
+
         const config = {
           type: 'postgres' as const,
           host,
@@ -64,7 +74,7 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           password,
           database,
           entities: [TypeormFilm, Schedule, TypeormOrder],
-          synchronize: true, // переключение синхронизации
+          synchronize: true, // Измени на true для тестового окружения
           retryAttempts: 3,
           retryDelay: 1000,
         };
