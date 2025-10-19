@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -10,6 +10,7 @@ import { FilmsController } from './films/films.controller';
 import { OrderController } from './order/order.controller';
 import { FilmsService } from './films/films.service';
 import { OrderService } from './order/order.service';
+import { OrderMiddleware } from './middleware/order.middleware';
 
 // TypeORM сущности и репозитории
 import { Film as TypeormFilm } from './repository/typeorm/entities/film.entity';
@@ -102,4 +103,8 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     },
   ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(OrderMiddleware).forRoutes('api/afisha/order');
+  }
+}
