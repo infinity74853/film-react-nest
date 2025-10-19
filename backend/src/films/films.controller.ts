@@ -12,32 +12,11 @@ export class FilmsController {
     try {
       const result = await this.filmsService.getAllFilms();
 
-      // Гарантируем, что все элементы валидны и имеют ВСЕ обязательные поля
-      const validFilms = (result.items || [])
-        .filter(
-          (film) =>
-            film &&
-            film.id &&
-            typeof film.id === 'string' &&
-            film.title &&
-            film.director &&
-            film.image,
-        )
-        .map((film) => ({
-          id: film.id,
-          rating: Number(film.rating) || 0,
-          director: film.director || 'Unknown Director',
-          tags: Array.isArray(film.tags) ? film.tags : [],
-          title: film.title || 'Unknown Title',
-          about: film.about || '',
-          description: film.description || '',
-          image: film.image || '',
-          cover: film.cover || '',
-          schedule: [], // обязательно пустой массив как в тестах
-        }));
-
-      console.log(`Returning ${validFilms.length} valid films`);
-      return { total: validFilms.length, items: validFilms };
+      // ПРОСТО ВОЗВРАЩАЕМ ДАННЫЕ БЕЗ ЛЮБОЙ ОБРАБОТКИ
+      return {
+        total: result.items.length,
+        items: result.items,
+      };
     } catch (error) {
       console.error('Error getting films:', error);
       return { total: 0, items: [] };

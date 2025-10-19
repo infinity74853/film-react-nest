@@ -34,53 +34,30 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // Используем стандартные имена переменных для PostgreSQL
-        const host =
-          configService.get('POSTGRES_HOST') ||
-          configService.get('DB_HOST') ||
-          'localhost';
-        const port =
-          configService.get('POSTGRES_PORT') ||
-          configService.get('DB_PORT') ||
-          5432;
-        const username =
-          configService.get('POSTGRES_USERNAME') ||
-          configService.get('POSTGRES_USER') ||
-          configService.get('DB_USERNAME') ||
-          'postgres';
-        const password =
-          configService.get('POSTGRES_PASSWORD') ||
-          configService.get('DB_PASSWORD') ||
-          'postgres';
-        const database =
-          configService.get('POSTGRES_DATABASE') ||
-          configService.get('POSTGRES_DB') ||
-          configService.get('DB_DATABASE') ||
-          'postgres';
+        // ТОЛЬКО переменные окружения
+        const host = configService.get('POSTGRES_HOST');
+        const port = configService.get('POSTGRES_PORT');
+        const username = configService.get('POSTGRES_USERNAME');
+        const password = configService.get('POSTGRES_PASSWORD');
+        const database = configService.get('POSTGRES_DATABASE');
 
-        // Для отладки выведем полученные значения
-        console.log('Database configuration:', {
+        console.log('Database config from env:', {
           host,
           port,
           username,
-          database: database,
-          passwordSet: !!password,
+          database,
         });
 
-        const config = {
-          type: 'postgres' as const,
-          host,
-          port: parseInt(port.toString()),
-          username,
-          password,
-          database,
+        return {
+          type: 'postgres',
+          host: host || 'localhost',
+          port: port ? parseInt(port) : 5432,
+          username: username || 'postgres',
+          password: password || 'postgres',
+          database: database || 'postgres',
           entities: [TypeormFilm, Schedule, TypeormOrder],
-          synchronize: true, // переключение синхронизации
-          retryAttempts: 3,
-          retryDelay: 1000,
+          synchronize: true,
         };
-
-        return config;
       },
       inject: [ConfigService],
     }),
