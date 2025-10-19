@@ -11,11 +11,13 @@ export class FilmsController {
   async getFilms(): Promise<{ total: number; items: any[] }> {
     const result = await this.filmsService.getAllFilms();
 
-    // Добавляем пустой schedule для каждого фильма, как ожидают тесты
-    const filmsWithSchedule = result.items.map((film) => ({
-      ...film,
-      schedule: [], // или можно получить реальное расписание
-    }));
+    // ФИЛЬТРУЕМ undefined элементы и добавляем пустой schedule
+    const filmsWithSchedule = result.items
+      .filter((film) => film && film.id) // убираем undefined и фильмы без id
+      .map((film) => ({
+        ...film,
+        schedule: [], // как ожидают тесты
+      }));
 
     return { total: filmsWithSchedule.length, items: filmsWithSchedule };
   }
