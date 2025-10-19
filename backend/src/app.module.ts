@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { JsonFixMiddleware } from './json-fix.middleware';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -102,4 +103,8 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(JsonFixMiddleware).forRoutes('api/afisha/order');
+  }
+}
