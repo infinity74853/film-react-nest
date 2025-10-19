@@ -74,7 +74,7 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           password,
           database,
           entities: [TypeormFilm, Schedule, TypeormOrder],
-          synchronize: false, // Измени на true для тестового окружения
+          synchronize: true, // Измени на true для тестового окружения
           retryAttempts: 3,
           retryDelay: 1000,
         };
