@@ -33,50 +33,53 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // Используем только переменные окружения без значений по умолчанию
-        const host = configService.get('POSTGRES_HOST');
-        const port = configService.get('POSTGRES_PORT');
+        // Используем стандартные имена переменных для PostgreSQL
+        const host =
+          configService.get('POSTGRES_HOST') ||
+          configService.get('DB_HOST') ||
+          'localhost';
+        const port =
+          configService.get('POSTGRES_PORT') ||
+          configService.get('DB_PORT') ||
+          5432;
         const username =
           configService.get('POSTGRES_USERNAME') ||
-          configService.get('POSTGRES_USER');
-        const password = configService.get('POSTGRES_PASSWORD');
+          configService.get('POSTGRES_USER') ||
+          configService.get('DB_USERNAME') ||
+          'postgres';
+        const password =
+          configService.get('POSTGRES_PASSWORD') ||
+          configService.get('DB_PASSWORD') ||
+          'postgres';
         const database =
           configService.get('POSTGRES_DATABASE') ||
-          configService.get('POSTGRES_DB');
+          configService.get('POSTGRES_DB') ||
+          configService.get('DB_DATABASE') ||
+          'postgres';
 
         // Для отладки выведем полученные значения
         console.log('Database configuration:', {
           host,
           port,
           username,
-          database,
+          database: database,
           passwordSet: !!password,
         });
 
-        // Если нет обязательных переменных - используем SQLite для тестов
-        if (!host || !username || !password || !database) {
-          console.log('Using SQLite for tests');
-          return {
-            type: 'sqlite',
-            database: ':memory:',
-            entities: [TypeormFilm, Schedule, TypeormOrder],
-            synchronize: true,
-            logging: false,
-          };
-        }
-
-        return {
-          type: 'postgres',
+        const config = {
+          type: 'postgres' as const,
           host,
-          port: port ? parseInt(port.toString()) : 5432,
+          port: parseInt(port.toString()),
           username,
           password,
           database,
           entities: [TypeormFilm, Schedule, TypeormOrder],
-          synchronize: true,
+          synchronize: false, // Измени на true для тестового окружения
           retryAttempts: 3,
           retryDelay: 1000,
         };
+
+        return config;
       },
       inject: [ConfigService],
     }),
