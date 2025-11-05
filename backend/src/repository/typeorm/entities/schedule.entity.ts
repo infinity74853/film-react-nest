@@ -1,6 +1,13 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { Film } from './film.entity';
-import { arrayTransformer, numberTransformer } from '../transformers';
+import { Order } from './order.entity';
 
 @Entity('schedules')
 export class Schedule {
@@ -10,27 +17,20 @@ export class Schedule {
   @Column()
   daytime!: string;
 
-  @Column()
+  @Column('int')
   hall!: number;
 
-  @Column()
+  @Column('int')
   rows!: number;
 
-  @Column()
+  @Column('int')
   seats!: number;
 
-  @Column('decimal', {
-    precision: 10,
-    scale: 2,
-    nullable: true,
-    transformer: numberTransformer,
-  })
+  @Column('float')
   price!: number;
 
-  @Column('text', {
-    transformer: arrayTransformer,
-  })
-  taken!: string[];
+  @Column('text')
+  taken!: string;
 
   @Column({ name: 'filmId' })
   filmId!: string;
@@ -38,4 +38,7 @@ export class Schedule {
   @ManyToOne(() => Film, (film) => film.schedules)
   @JoinColumn({ name: 'filmId' })
   film!: Film;
+
+  @OneToMany(() => Order, (order) => order.schedule)
+  orders!: Order[];
 }

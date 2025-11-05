@@ -31,18 +31,20 @@ export class TypeormOrderRepository implements OrderRepository {
         throw new Error(`Session not found: ${firstTicket.session}`);
       }
 
-      // Обработка taken - безопасно преобразуем в массив
+      // Обработка taken - теперь это строка, парсим в массив
       let currentTaken: string[] = [];
 
-      if (Array.isArray(schedule.taken)) {
-        currentTaken = schedule.taken;
-      } else if (typeof schedule.taken === 'string') {
-        // Если это строка, пытаемся распарсить
+      if (schedule.taken && schedule.taken !== '[]') {
         try {
+          // Пытаемся распарсить JSON строку
           const parsed = JSON.parse(schedule.taken);
           currentTaken = Array.isArray(parsed) ? parsed : [];
         } catch {
-          currentTaken = [];
+          // Если не JSON, разбиваем по запятой
+          currentTaken = schedule.taken
+            .split(',')
+            .map((seat) => seat.trim())
+            .filter((seat) => seat);
         }
       }
 
@@ -69,31 +71,48 @@ export class TypeormOrderRepository implements OrderRepository {
         0,
       );
 
-      // Создаем заказ через TypeORM
+      // СОЗДАЕМ ЗАКАЗ ПО НОВОЙ СТРУКТУРЕ (из SQL файлов)
       const orderRepository = queryRunner.manager.getRepository(Order);
+
+      // Для каждого билета создаем отдельный заказ (как в старой структуре)
+      // Или создаем один заказ с первым билетом (упрощенная логика)
+      const firstTicketData = orderData.tickets[0];
+
       const newOrder = orderRepository.create({
-        tickets: orderData.tickets,
-        email: orderData.email || 'user@example.com',
+        name: orderData.email || 'Customer', // Используем email как имя
         phone: orderData.phone || '+1234567890',
-        totalPrice: totalPrice,
-        status: 'pending' as const,
-        createdAt: new Date(),
+        email: orderData.email || 'user@example.com',
+        tickets: orderData.tickets.length, // Количество билетов
+        row: firstTicketData.row || 1,
+        column: firstTicketData.seat || 1, // column = seat
+        scheduleId: firstTicket.session,
+        // id генерируется автоматически через uuid_generate_v4()
       });
 
       const savedOrder = await orderRepository.save(newOrder);
-      // Обновляем занятые места
+
+      // Обновляем занятые места в расписании
       const updatedTaken = [...currentTaken, ...newSeats];
-      // Обновляем через TypeORM
-      schedule.taken = updatedTaken;
+      schedule.taken = JSON.stringify(updatedTaken); // Сохраняем как JSON строку
       await scheduleRepository.save(schedule);
-      // Фиксируем транзакции в базе данных
+
+      // Фиксируем транзакцию
       await queryRunner.commitTransaction();
+
+      // Возвращаем DTO в формате ожидаемом фронтендом
       return {
         id: savedOrder.id,
-        tickets: savedOrder.tickets,
-        totalPrice: Number(savedOrder.totalPrice),
-        status: savedOrder.status,
-        createdAt: savedOrder.createdAt,
+        tickets: orderData.tickets.map((ticket) => ({
+          film: ticket.film,
+          session: ticket.session,
+          daytime: ticket.daytime,
+          row: ticket.row,
+          seat: ticket.seat,
+          price: ticket.price,
+        })),
+        totalPrice: totalPrice,
+        status: 'pending', // В новой структуре нет статуса, но фронтенд его ожидает
+        createdAt: new Date(), // В новой структуре нет createdAt, но фронтенд его ожидает
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -109,16 +128,27 @@ export class TypeormOrderRepository implements OrderRepository {
       const orderRepository = this.dataSource.getRepository(Order);
       const order = await orderRepository.findOne({
         where: { id },
+        relations: ['schedule'], // Загружаем связанное расписание
       });
 
       if (!order) return null;
 
+      // Воссоздаем структуру билетов из данных заказа
+      const ticket: TicketDto = {
+        film: order.schedule?.filmId || 'unknown', // Берем filmId из расписания
+        session: order.scheduleId,
+        daytime: order.schedule?.daytime || new Date().toISOString(),
+        row: order.row,
+        seat: order.column, // column = seat в новой структуре
+        price: order.schedule?.price || 0,
+      };
+
       return {
         id: order.id,
-        tickets: order.tickets,
-        totalPrice: order.totalPrice,
-        status: order.status,
-        createdAt: order.createdAt,
+        tickets: [ticket], // Создаем массив с одним билетом
+        totalPrice: order.schedule?.price || 0,
+        status: 'confirmed', // В новой структуре нет статуса, используем confirmed по умолчанию
+        createdAt: new Date(), // В новой структуре нет createdAt
       };
     } catch (error) {
       console.error('Find order by id error:', error);
@@ -127,25 +157,17 @@ export class TypeormOrderRepository implements OrderRepository {
   }
 
   async confirmOrder(id: string): Promise<OrderDto> {
-    const orderRepository = this.dataSource.getRepository(Order);
-    const order = await orderRepository.findOne({
-      where: { id },
-    });
+    // В новой структуре нет статуса confirmed, просто возвращаем заказ
+    const order = await this.findById(id);
 
     if (!order) {
       throw new Error('Order not found');
     }
 
-    // Обновляем статус заказа
-    order.status = 'confirmed';
-    const updatedOrder = await orderRepository.save(order);
-
+    // Меняем статус на confirmed для фронтенда
     return {
-      id: updatedOrder.id,
-      tickets: updatedOrder.tickets,
-      totalPrice: updatedOrder.totalPrice,
-      status: updatedOrder.status,
-      createdAt: updatedOrder.createdAt,
+      ...order,
+      status: 'confirmed',
     };
   }
 }

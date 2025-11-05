@@ -12,14 +12,21 @@ if (typeof (global as any).crypto === 'undefined') {
 // Теперь импортируем NestJS и остальные модули
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import 'dotenv/config';
+import { LoggerFactory } from './logger/logger.factory';
 import { DataSource } from 'typeorm';
 import { importTestData } from './database/seeds/import-test-data';
 import { Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
+  // СОЗДАЕМ ПРИЛОЖЕНИЕ С БУФЕРИЗАЦИЕЙ ЛОГОВ
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug'],
+    bufferLogs: true, // ВАЖНО: буферизуем логи до настройки логгера
   });
+
+  // НАСТРАИВАЕМ ЛОГГЕР ПЕРВЫМ ДЕЛОМ
+  const logger = LoggerFactory.createLogger();
+  app.useLogger(logger);
 
   // Инициализация базы данных с тестовыми данными
   try {
@@ -29,10 +36,12 @@ async function bootstrap() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     await importTestData(dataSource);
+    logger.log('✅ Database initialized with test data');
   } catch (error) {
-    console.warn('⚠️ Database initialization warning:', error);
+    logger.warn('⚠️ Database initialization warning:', error);
   }
 
+  app.setGlobalPrefix('api/afisha');
   app.enableCors({
     origin: true,
     credentials: true,
@@ -73,11 +82,13 @@ async function bootstrap() {
   });
 
   process.on('SIGTERM', async () => {
+    logger.log('🛑 Received SIGTERM, shutting down gracefully...');
     await app.close();
     process.exit(0);
   });
 
   process.on('SIGINT', async () => {
+    logger.log('🛑 Received SIGINT, shutting down gracefully...');
     await app.close();
     process.exit(0);
   });
@@ -86,6 +97,10 @@ async function bootstrap() {
   const host = '0.0.0.0';
 
   await app.listen(port, host);
+
+  // Логируем успешный запуск
+  logger.log(`🚀 Application is running on: http://${host}:${port}`);
+  logger.log(`📝 Logger type: ${process.env.LOGGER_TYPE || 'dev'}`);
 }
 
 bootstrap();

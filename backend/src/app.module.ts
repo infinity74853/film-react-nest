@@ -25,11 +25,21 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
       cache: true,
       envFilePath: '.env',
     }),
+
+    // Для путей /content/afisha/bg*.jpg (оригинальные файлы)
     ServeStaticModule.forRoot({
-      rootPath: path.join(__dirname, '..', 'public'),
+      rootPath: path.join(__dirname, '..', 'public', 'content', 'afisha'),
       serveRoot: '/content/afisha',
       exclude: ['/api/*'],
     }),
+
+    // ДЛЯ ПУТЕЙ /content/afishabg*.jpg - отдаем symbolic links из корня public
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'public'),
+      serveRoot: '/content',
+      exclude: ['/api/*', '/content/afisha/*'],
+    }),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -56,15 +66,6 @@ import { TypeormOrderRepository } from './repository/typeorm/typeorm-order.repos
           configService.get('POSTGRES_DB') ||
           configService.get('DB_DATABASE') ||
           'postgres';
-
-        // Для отладки выведем полученные значения
-        console.log('Database configuration:', {
-          host,
-          port,
-          username,
-          database: database,
-          passwordSet: !!password,
-        });
 
         const config = {
           type: 'postgres' as const,

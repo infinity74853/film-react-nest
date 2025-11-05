@@ -17,11 +17,11 @@ interface RawOrderData {
   phone?: string;
 }
 
-@Controller('api/afisha/order')
+@Controller('order') // Префикс 'order' + глобальный 'api/afisha' = 'api/afisha/order'
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  @Post()
+  @Post() // Без пути - будет POST /api/afisha/order
   async createOrder(@Body() createOrderDto: RawOrderData) {
     // Если данные не пришли или нет билетов
     if (
@@ -72,12 +72,12 @@ export class OrderController {
     }
   }
 
-  @Post(':id/confirm')
+  @Post(':id/confirm') // POST /api/afisha/order/:id/confirm
   async confirmOrder(@Param('id') id: string): Promise<OrderDto> {
     return await this.orderService.confirmOrder(id);
   }
 
-  @Get(':id')
+  @Get(':id') // GET /api/afisha/order/:id
   async getOrder(@Param('id') id: string): Promise<OrderDto> {
     return await this.orderService.getOrder(id);
   }

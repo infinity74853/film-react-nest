@@ -28,6 +28,46 @@ export class TypeormFilmsRepository implements FilmsRepository {
     return filename.includes('.') ? filename : '';
   }
 
+  // Преобразуем строку tags в массив
+  private parseTags(tagsString: string): string[] {
+    if (!tagsString) return [];
+
+    // Если tags уже в формате массива JSON
+    if (tagsString.startsWith('[') && tagsString.endsWith(']')) {
+      try {
+        return JSON.parse(tagsString);
+      } catch {
+        return tagsString.split(',').map((tag) => tag.trim());
+      }
+    }
+
+    // Разделяем по запятой
+    return tagsString
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  // Преобразуем строку taken в массив
+  private parseTaken(takenString: string): string[] {
+    if (!takenString) return [];
+
+    // Если taken уже в формате массива JSON
+    if (takenString.startsWith('[') && takenString.endsWith(']')) {
+      try {
+        return JSON.parse(takenString);
+      } catch {
+        return takenString.split(',').map((item) => item.trim());
+      }
+    }
+
+    // Разделяем по запятой
+    return takenString
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  }
+
   async findAll(): Promise<FilmDto[]> {
     try {
       const films = await this.filmRepository.find();
@@ -39,7 +79,7 @@ export class TypeormFilmsRepository implements FilmsRepository {
           id: film.id,
           rating: film.rating,
           director: film.director,
-          tags: film.tags,
+          tags: this.parseTags(film.tags), // ПРЕОБРАЗУЕМ В МАССИВ
           title: film.title,
           about: film.about,
           description: film.description,
@@ -68,7 +108,7 @@ export class TypeormFilmsRepository implements FilmsRepository {
         id: film.id,
         rating: film.rating,
         director: film.director,
-        tags: film.tags,
+        tags: this.parseTags(film.tags), // ПРЕОБРАЗУЕМ В МАССИВ
         title: film.title,
         about: film.about,
         description: film.description,
@@ -84,7 +124,7 @@ export class TypeormFilmsRepository implements FilmsRepository {
           rows: session.rows,
           seats: session.seats,
           price: session.price,
-          taken: session.taken,
+          taken: this.parseTaken(session.taken), // ПРЕОБРАЗУЕМ В МАССИВ
         }),
       );
 
@@ -96,6 +136,27 @@ export class TypeormFilmsRepository implements FilmsRepository {
     } catch (error) {
       console.error('PostgreSQL findById error:', error);
       return null;
+    }
+  }
+
+  async findSchedulesByFilmId(filmId: string): Promise<ScheduleDto[]> {
+    try {
+      const schedules = await this.scheduleRepository.find({
+        where: { filmId },
+      });
+
+      return schedules.map((schedule) => ({
+        id: schedule.id,
+        daytime: schedule.daytime,
+        hall: schedule.hall,
+        rows: schedule.rows,
+        seats: schedule.seats,
+        price: schedule.price,
+        taken: this.parseTaken(schedule.taken), // ПРЕОБРАЗУЕМ В МАССИВ
+      }));
+    } catch (error) {
+      console.error('PostgreSQL findSchedulesByFilmId error:', error);
+      return [];
     }
   }
 }

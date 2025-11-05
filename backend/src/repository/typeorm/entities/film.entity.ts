@@ -1,26 +1,19 @@
 import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
 import { Schedule } from './schedule.entity';
-import { arrayTransformer, numberTransformer } from '../transformers';
 
 @Entity('films')
 export class Film {
   @PrimaryColumn('uuid')
   id!: string;
 
-  @Column('decimal', {
-    precision: 3,
-    scale: 1,
-    transformer: numberTransformer,
-  })
+  @Column('float')
   rating!: number;
 
   @Column()
   director!: string;
 
-  @Column('text', {
-    transformer: arrayTransformer,
-  })
-  tags!: string[];
+  @Column('text')
+  tags!: string;
 
   @Column()
   image!: string;
@@ -31,10 +24,10 @@ export class Film {
   @Column()
   title!: string;
 
-  @Column('text')
+  @Column()
   about!: string;
 
-  @Column('text')
+  @Column()
   description!: string;
 
   @OneToMany(() => Schedule, (schedule) => schedule.film)

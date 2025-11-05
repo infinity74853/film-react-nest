@@ -1,0 +1,86 @@
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: film_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DATABASE:-film_db}
+      POSTGRES_USER: ${POSTGRES_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/test:/docker-entrypoint-initdb.d  # SQL файлы для инициализации
+    networks:
+      - film_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # PGAdmin для управления БД
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: film_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@film.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    networks:
+      - film_network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Бэкенд приложение
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: film_backend
+    environment:
+      DATABASE_DRIVER: postgres
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE:-film_db}
+      LOGGER_TYPE: json
+    ports:
+      - "3000:3000"
+    networks:
+      - film_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Фронтенд приложение
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: film_frontend
+    ports:
+      - "80:80"
+    networks:
+      - film_network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  film_network:
+    driver: bridge

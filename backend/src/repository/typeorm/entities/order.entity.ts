@@ -1,41 +1,33 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Schedule } from './schedule.entity';
 
 @Entity('orders')
 export class Order {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('uuid')
   id!: string;
 
-  @Column('jsonb')
-  tickets!: Array<{
-    film: string;
-    session: string;
-    daytime: string;
-    row: number;
-    seat: number;
-    price: number;
-  }>;
-
   @Column()
-  email!: string;
+  name!: string;
 
   @Column()
   phone!: string;
 
-  @Column({ name: 'total_price', type: 'decimal', precision: 10, scale: 2 })
-  totalPrice!: number;
+  @Column()
+  email!: string;
 
-  @Column({
-    type: 'enum',
-    enum: ['pending', 'confirmed', 'cancelled'],
-    default: 'pending',
-  })
-  status!: 'pending' | 'confirmed' | 'cancelled';
+  @Column('int')
+  tickets!: number;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt!: Date;
+  @Column('int')
+  row!: number;
+
+  @Column('int')
+  column!: number;
+
+  @Column({ name: 'scheduleId' })
+  scheduleId!: string;
+
+  @ManyToOne(() => Schedule, (schedule) => schedule.orders)
+  @JoinColumn({ name: 'scheduleId' })
+  schedule!: Schedule;
 }
