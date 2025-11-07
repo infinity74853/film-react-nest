@@ -1,6 +1,14 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  ManyToOne,
+  JoinColumn,
+  Unique,
+} from 'typeorm';
 import { Schedule } from './schedule.entity';
 
+@Unique(['scheduleId', 'row', 'column']) // ← ДОБАВЛЯЕМ ЭТУ СТРОЧКУ
 @Entity('orders')
 export class Order {
   @PrimaryColumn('uuid')

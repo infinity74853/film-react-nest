@@ -19,6 +19,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "set NODE_ENV=test&& jest --config ./test/jest-e2e.json",
     "test:e2e:verbose": "set NODE_ENV=test&& jest --config ./test/jest-e2e.json --verbose --no-cache",
+    "test:logger": "jest test/logger --verbose",
+    "test:logger:watch": "jest test/logger --watch",
+    "test:unit": "jest test --verbose",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
     "migration:run": "npm run typeorm migration:run -- -d src/data-source.ts",
     "seed:films": "ts-node -r tsconfig-paths/register src/database/seeds/films.seed.ts",
@@ -64,20 +67,21 @@
     "typescript": "^5.3.3"
   },
   "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/main.ts"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/src/$1"
+    }
   }
 }

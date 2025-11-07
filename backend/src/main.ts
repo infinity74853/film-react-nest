@@ -25,7 +25,7 @@ async function bootstrap() {
   });
 
   // НАСТРАИВАЕМ ЛОГГЕР ПЕРВЫМ ДЕЛОМ
-  const logger = LoggerFactory.createLogger();
+  const logger = LoggerFactory.createLogger('Bootstrap');
   app.useLogger(logger);
 
   // Инициализация базы данных с тестовыми данными

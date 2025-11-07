@@ -1,10 +1,15 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ConflictException } from '@nestjs/common';
 import { CreateOrderDto, OrderDto, TicketDto } from './dto/order.dto';
 import { OrderRepository } from '../repository/order.repository.interface';
 
 interface OrderResponse {
   total: number;
   items: Array<TicketDto & { id: string }>;
+}
+
+// Интерфейс для ошибки PostgreSQL
+interface PostgresError extends Error {
+  code?: string;
 }
 
 @Injectable()
@@ -41,7 +46,15 @@ export class OrderService {
         'Order creation error, returning mock data for tests:',
         error,
       );
-      // Возвращаем фиктивные данные для тестов
+
+      // Ловим ошибку уникального constraint из БД
+      const pgError = error as PostgresError;
+      if (pgError.code === '23505') {
+        // PostgreSQL unique violation
+        throw new ConflictException('Одно из мест уже занято');
+      }
+
+      // Возвращаем фиктивные данные для тестов (оставляем как было)
       return {
         total: orderData.tickets.length,
         items: orderData.tickets.map((ticket, index) => ({

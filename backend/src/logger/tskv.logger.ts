@@ -5,25 +5,25 @@ export class TskvLogger implements LoggerService {
   private formatMessage(
     level: string,
     message: any,
+    context?: string,
     ...optionalParams: any[]
   ): string {
     const timestamp = new Date().toISOString();
-    const formattedMessage =
-      typeof message === 'object' ? JSON.stringify(message) : String(message);
+    const formattedMessage = this.escapeValue(message);
 
     const fields = [
       `timestamp=${timestamp}`,
       `level=${level}`,
       `message=${formattedMessage}`,
+      `context=${context || 'Application'}`,
     ];
 
-    // Добавляем дополнительные параметры если есть
+    // Добавляем дополнительные параметры
     if (optionalParams.length > 0) {
       optionalParams.forEach((param, index) => {
-        if (param) {
-          fields.push(
-            `param${index}=${typeof param === 'object' ? JSON.stringify(param) : String(param)}`,
-          );
+        if (param !== undefined && param !== null) {
+          const value = this.escapeValue(param);
+          fields.push(`param${index}=${value}`);
         }
       });
     }
@@ -31,31 +31,49 @@ export class TskvLogger implements LoggerService {
     return fields.join('\t') + '\n';
   }
 
-  log(message: any, ...optionalParams: any[]) {
-    process.stdout.write(this.formatMessage('log', message, ...optionalParams));
+  private escapeValue(value: any): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    // Преобразуем объекты в JSON строку, остальные значения в строку
+    const stringValue =
+      typeof value === 'object' ? JSON.stringify(value) : String(value);
+
+    // Экранируем специальные символы
+    return stringValue
+      .replace(/\t/g, ' ')
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, ' ');
   }
 
-  error(message: any, ...optionalParams: any[]) {
+  log(message: any, context?: string, ...optionalParams: any[]) {
+    process.stdout.write(
+      this.formatMessage('LOG', message, context, ...optionalParams),
+    );
+  }
+
+  error(message: any, context?: string, ...optionalParams: any[]) {
     process.stderr.write(
-      this.formatMessage('error', message, ...optionalParams),
+      this.formatMessage('ERROR', message, context, ...optionalParams),
     );
   }
 
-  warn(message: any, ...optionalParams: any[]) {
+  warn(message: any, context?: string, ...optionalParams: any[]) {
     process.stdout.write(
-      this.formatMessage('warn', message, ...optionalParams),
+      this.formatMessage('WARN', message, context, ...optionalParams),
     );
   }
 
-  debug(message: any, ...optionalParams: any[]) {
+  debug(message: any, context?: string, ...optionalParams: any[]) {
     process.stdout.write(
-      this.formatMessage('debug', message, ...optionalParams),
+      this.formatMessage('DEBUG', message, context, ...optionalParams),
     );
   }
 
-  verbose(message: any, ...optionalParams: any[]) {
+  verbose(message: any, context?: string, ...optionalParams: any[]) {
     process.stdout.write(
-      this.formatMessage('verbose', message, ...optionalParams),
+      this.formatMessage('VERBOSE', message, context, ...optionalParams),
     );
   }
 }

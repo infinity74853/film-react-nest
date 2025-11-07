@@ -2,43 +2,60 @@ import { LoggerService, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class JsonLogger implements LoggerService {
-  private formatMessage(level: string, message: any, ...optionalParams: any[]) {
+  private formatMessage(
+    level: string,
+    message: any,
+    context?: string,
+    ...optionalParams: any[]
+  ) {
     const logEntry = {
       timestamp: new Date().toISOString(),
       level,
-      message: typeof message === 'object' ? message : String(message),
-      context: optionalParams.length > 0 ? optionalParams : undefined,
+      message:
+        typeof message === 'object' ? JSON.stringify(message) : String(message),
+      context: context || 'Application',
+      ...this.parseOptionalParams(optionalParams),
     };
     return JSON.stringify(logEntry);
   }
 
-  log(message: any, ...optionalParams: any[]) {
+  private parseOptionalParams(optionalParams: any[]) {
+    if (optionalParams.length === 0) return {};
+
+    return {
+      additionalParams: optionalParams.map((param) =>
+        typeof param === 'object' ? JSON.stringify(param) : String(param),
+      ),
+    };
+  }
+
+  log(message: any, context?: string, ...optionalParams: any[]) {
     process.stdout.write(
-      this.formatMessage('log', message, ...optionalParams) + '\n',
+      this.formatMessage('LOG', message, context, ...optionalParams) + '\n',
     );
   }
 
-  error(message: any, ...optionalParams: any[]) {
+  error(message: any, context?: string, ...optionalParams: any[]) {
     process.stderr.write(
-      this.formatMessage('error', message, ...optionalParams) + '\n',
+      this.formatMessage('ERROR', message, context, ...optionalParams) + '\n',
     );
   }
 
-  warn(message: any, ...optionalParams: any[]) {
+  warn(message: any, context?: string, ...optionalParams: any[]) {
     process.stdout.write(
-      this.formatMessage('warn', message, ...optionalParams) + '\n',
+      this.formatMessage('WARN', message, context, ...optionalParams) + '\n',
     );
   }
 
-  debug(message: any, ...optionalParams: any[]) {
+  debug(message: any, context?: string, ...optionalParams: any[]) {
     process.stdout.write(
-      this.formatMessage('debug', message, ...optionalParams) + '\n',
+      this.formatMessage('DEBUG', message, context, ...optionalParams) + '\n',
     );
   }
 
-  verbose(message: any, ...optionalParams: any[]) {
+  verbose(message: any, context?: string, ...optionalParams: any[]) {
     process.stdout.write(
-      this.formatMessage('verbose', message, ...optionalParams) + '\n',
+      this.formatMessage('VERBOSE', message, context, ...optionalParams) + '\n',
     );
   }
 }
