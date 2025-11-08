@@ -40,7 +40,8 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
+    image: ghcr.io/infinity74853/film-backend:latest
     container_name: film_backend
     environment:
       DATABASE_DRIVER: postgres
@@ -49,37 +50,49 @@ services:
       POSTGRES_USERNAME: ${POSTGRES_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DATABASE: ${POSTGRES_DATABASE:-film_db}
-      LOGGER_TYPE: json
-    ports:
-      - "3000:3000"
+      LOGGER_TYPE: dev
+      NODE_ENV: development
     networks:
       - film_network
     depends_on:
       postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+        condition: service_healthy    
     restart: unless-stopped
 
-  # Фронтенд приложение
+  # Фронтенд - сборка статики
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: ghcr.io/infinity74853/film-frontend:latest
     container_name: film_frontend
+    networks:
+      - film_network
+    volumes:
+      - frontend_static:/static
+    restart: unless-stopped
+
+  # Основной Nginx сервер
+  nginx:
+    build:
+      context: ./nginx
+    image: ghcr.io/infinity74853/film-nginx:latest
+    container_name: film_nginx
     ports:
       - "80:80"
+    volumes:
+      # Монтируем статику из фронтенда
+      - frontend_static:/usr/share/nginx/html:ro
     networks:
       - film_network
     depends_on:
+      - frontend
       - backend
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  frontend_static:  # Volume для статики фронтенда
 
 networks:
   film_network:

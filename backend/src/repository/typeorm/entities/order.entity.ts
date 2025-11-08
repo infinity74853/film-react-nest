@@ -1,17 +1,17 @@
 import {
   Entity,
   Column,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
   Unique,
 } from 'typeorm';
 import { Schedule } from './schedule.entity';
 
-@Unique(['scheduleId', 'row', 'column']) // ← ДОБАВЛЯЕМ ЭТУ СТРОЧКУ
+@Unique(['scheduleId', 'row', 'column'])
 @Entity('orders')
 export class Order {
-  @PrimaryColumn('uuid')
+  @PrimaryGeneratedColumn('uuid') // ← МЕНЯЕМ НА PrimaryGeneratedColumn!
   id!: string;
 
   @Column()

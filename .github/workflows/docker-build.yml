@@ -2,9 +2,9 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [ review2 ]
+    branches: [ review2, main ]
   pull_request:
-    branches: [ review2 ]
+    branches: [ review2, main ]
 
 jobs:
   build-backend:
@@ -28,16 +28,22 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Build and push backend
-      run: |
-        docker build -t ghcr.io/${{ github.repository_owner }}/film-backend:latest ./backend
-        docker push ghcr.io/${{ github.repository_owner }}/film-backend:latest
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/film-backend:latest
+          ghcr.io/${{ github.repository_owner }}/film-backend:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   build-frontend:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    needs: build-backend
     
     steps:
     - name: Checkout code
@@ -54,6 +60,43 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Build and push frontend
-      run: |
-        docker build -t ghcr.io/${{ github.repository_owner }}/film-frontend:latest ./frontend
-        docker push ghcr.io/${{ github.repository_owner }}/film-frontend:latest
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/film-frontend:latest
+          ghcr.io/${{ github.repository_owner }}/film-frontend:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  build-nginx:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build and push nginx
+      uses: docker/build-push-action@v5
+      with:
+        context: ./nginx
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/film-nginx:latest
+          ghcr.io/${{ github.repository_owner }}/film-nginx:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

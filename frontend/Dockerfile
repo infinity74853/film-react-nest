@@ -9,22 +9,19 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Проверим что шрифты собрались
-RUN find /app/dist -name "*.woff*" -o -name "*.ttf" | head -5
+# Проверим что собралось
+RUN ls -la /app/dist
 
-# Этап продакшн
-FROM nginx:alpine
+# Этап для статики - копируем в правильное место
+FROM alpine:latest
 
-# Копируем собранные файлы в nginx
-COPY --from=build /app/dist /usr/share/nginx/html
+WORKDIR /static
 
-# Копируем кастомную конфигурацию nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Копируем собранные файлы из этапа build
+COPY --from=build /app/dist/. ./
 
-# Создаем папку для шрифтов если её нет и проверяем
-RUN mkdir -p /usr/share/nginx/html/fonts && \
-    find /usr/share/nginx/html -name "*.woff*" -o -name "*.ttf" | head -5 || echo "Checking fonts..."
+# Проверим что файлы скопировались
+RUN ls -la /static
 
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# Ждем бесконечно
+CMD ["tail", "-f", "/dev/null"]

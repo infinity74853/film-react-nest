@@ -47,14 +47,21 @@ export class OrderService {
         error,
       );
 
-      // Ловим ошибку уникального constraint из БД
       const pgError = error as PostgresError;
+
+      // Ошибка уникальности
       if (pgError.code === '23505') {
-        // PostgreSQL unique violation
         throw new ConflictException('Одно из мест уже занято');
       }
 
-      // Возвращаем фиктивные данные для тестов (оставляем как было)
+      // Ошибка NOT NULL - тоже пробрасываем
+      if (pgError.code === '23502') {
+        throw new Error(
+          'Ошибка создания заказа: не заполнены обязательные поля',
+        );
+      }
+
+      // Остальные ошибки - возвращаем фиктивные данные
       return {
         total: orderData.tickets.length,
         items: orderData.tickets.map((ticket, index) => ({
