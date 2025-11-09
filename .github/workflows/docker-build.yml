@@ -1,10 +1,11 @@
-name: Build and Push Docker Images
+name: Build, Push and Deploy
 
 on:
   push:
     branches: [ review2, main ]
   pull_request:
     branches: [ review2, main ]
+  workflow_dispatch:  # Позволяет запускать вручную
 
 jobs:
   build-backend:
@@ -100,3 +101,48 @@ jobs:
           ghcr.io/${{ github.repository_owner }}/film-nginx:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend, build-nginx]
+    if: github.ref == 'refs/heads/review2'  # Деплой только из review2 ветки
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to production server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          echo "=== Starting automated deployment ==="
+          cd ~/film-app
+          
+          echo "=== Pulling latest images ==="
+          docker compose pull backend frontend nginx
+          
+          echo "=== Stopping application containers ==="
+          docker compose stop backend frontend nginx || true
+          
+          echo "=== Removing old containers ==="
+          docker compose rm -f backend frontend nginx || true
+          
+          echo "=== Starting new containers ==="
+          docker compose up -d backend frontend nginx
+          
+          echo "=== Waiting for services to start ==="
+          sleep 10
+          
+          echo "=== Checking running containers ==="
+          docker compose ps
+          
+          echo "=== Checking nginx status ==="
+          curl -f http://localhost:80/ || echo "Frontend check completed"
+          
+          echo "=== Cleaning up old images ==="
+          docker image prune -f
+          
+          echo "=== Deployment completed successfully! ==="
