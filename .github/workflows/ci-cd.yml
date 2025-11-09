@@ -4,6 +4,12 @@ on:
   push:
     branches: [review2]
 
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/infinity74853/film-backend
+  FRONTEND_IMAGE: ghcr.io/infinity74853/film-frontend  
+  NGINX_IMAGE: ghcr.io/infinity74853/film-nginx
+
 jobs:
   build-backend:
     runs-on: ubuntu-latest
@@ -17,9 +23,9 @@ jobs:
     - name: Login to GHCR
       uses: docker/login-action@v3
       with:
-        registry: ghcr.io
+        registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.GHCR_TOKEN }}
         
     - name: Build and push backend
       uses: docker/build-push-action@v5
@@ -27,8 +33,10 @@ jobs:
         context: ./backend
         push: true
         tags: |
-          ghcr.io/infinity74853/film-backend:latest
-          ghcr.io/infinity74853/film-backend:${{ github.sha }}
+          ${{ env.BACKEND_IMAGE }}:latest
+          ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   build-frontend:
     runs-on: ubuntu-latest
@@ -42,9 +50,9 @@ jobs:
     - name: Login to GHCR
       uses: docker/login-action@v3
       with:
-        registry: ghcr.io
+        registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.GHCR_TOKEN }}
         
     - name: Build and push frontend
       uses: docker/build-push-action@v5
@@ -52,8 +60,10 @@ jobs:
         context: ./frontend
         push: true
         tags: |
-          ghcr.io/infinity74853/film-frontend:latest
-          ghcr.io/infinity74853/film-frontend:${{ github.sha }}
+          ${{ env.FRONTEND_IMAGE }}:latest
+          ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   build-nginx:
     runs-on: ubuntu-latest
@@ -67,9 +77,9 @@ jobs:
     - name: Login to GHCR
       uses: docker/login-action@v3
       with:
-        registry: ghcr.io
+        registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.GHCR_TOKEN }}
         
     - name: Build and push nginx
       uses: docker/build-push-action@v5
@@ -77,43 +87,25 @@ jobs:
         context: ./nginx
         push: true
         tags: |
-          ghcr.io/infinity74853/film-nginx:latest
-          ghcr.io/infinity74853/film-nginx:${{ github.sha }}
+          ${{ env.NGINX_IMAGE }}:latest
+          ${{ env.NGINX_IMAGE }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   deploy:
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend, build-nginx]
     
     steps:
-    - name: Wait for images to be available
-      run: sleep 30  # Даем время образам стать доступными в GHCR
-      
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}  # теперь infinity
+        username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
           cd ~/film-app
           echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u infinity74853 --password-stdin
-          
-          echo "=== Pulling images with retry ==="
-          # Пробуем несколько раз с задержкой
-          for i in 1 2 3; do
-            if docker compose pull; then
-              echo "=== Images pulled successfully ==="
-              break
-            else
-              echo "=== Pull failed, retrying in 10 seconds... ==="
-              sleep 10
-            fi
-          done
-          
-          echo "=== Recreating containers ==="
+          docker compose pull
           docker compose up -d
-          
-          echo "=== Checking services ==="
-          docker compose ps
-          
-          echo "=== Deployment completed! ==="
+          docker image prune -f

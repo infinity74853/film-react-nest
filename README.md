@@ -33,7 +33,12 @@ MongoDB должна быть установлена и запущена.
 
 # FILM! - Киноафиша
 
-## Деплой
+## 🚀 Деплой
+
+- Frontend: http://igor-films.students.nomorepartiessbs.ru/
+- API: http://igor-films.students.nomorepartiessbs.ru/api/films
+- PGAdmin: http://89.169.173.250:8080 (admin@film.com / admin)
+
 
 Приложение задеплоено на Yandex Cloud и доступно по адресу:  
 **<https://igor-films.students.nomorepartiessbs.ru>**
