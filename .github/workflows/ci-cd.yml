@@ -105,7 +105,19 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
           cd ~/film-app
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u infinity74853 --password-stdin
-          docker compose pull
+          
+          # Debug info
+          echo "=== Debug info ==="
+          whoami
+          pwd
+          ls -la
+          
+          # Try without login first
+          echo "=== Pulling without login ==="
+          docker compose pull --ignore-pull-failures || echo "Pull failed, continuing..."
+          
+          echo "=== Starting containers ==="
           docker compose up -d
-          docker image prune -f
+          
+          echo "=== Final check ==="
+          docker compose ps
