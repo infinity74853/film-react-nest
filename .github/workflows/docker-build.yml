@@ -1,11 +1,11 @@
-name: CI/CD Pipeline
+name: Build, Push and Deploy
 
 on:
   push:
-    branches: [review2, main]
+    branches: [ review2, main ]
   pull_request:
-    branches: [review2, main]
-  workflow_dispatch:
+    branches: [ review2, main ]
+  workflow_dispatch:  # Позволяет запускать вручную
 
 jobs:
   build-backend:
@@ -105,7 +105,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend, build-nginx]
-    if: github.ref == 'refs/heads/review2'
+    if: github.ref == 'refs/heads/review2'  # Деплой только из review2 ветки
     
     steps:
     - name: Checkout code
@@ -118,26 +118,31 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          echo "=== Starting deployment ==="
+          echo "=== Starting automated deployment ==="
           cd ~/film-app
           
-          echo "=== Logging in to GitHub Container Registry ==="
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          
           echo "=== Pulling latest images ==="
-          docker compose pull
+          docker compose pull backend frontend nginx
           
-          echo "=== Recreating containers ==="
-          docker compose up -d
+          echo "=== Stopping application containers ==="
+          docker compose stop backend frontend nginx || true
           
-          echo "=== Checking services ==="
+          echo "=== Removing old containers ==="
+          docker compose rm -f backend frontend nginx || true
+          
+          echo "=== Starting new containers ==="
+          docker compose up -d backend frontend nginx
+          
+          echo "=== Waiting for services to start ==="
+          sleep 10
+          
+          echo "=== Checking running containers ==="
           docker compose ps
           
-          echo "=== Testing API ==="
-          sleep 10  # Даем время сервисам запуститься
-          curl -f http://localhost/api/films || echo "API check completed"
+          echo "=== Checking nginx status ==="
+          curl -f http://localhost:80/ || echo "Frontend check completed"
           
-          echo "=== Cleaning up ==="
+          echo "=== Cleaning up old images ==="
           docker image prune -f
           
           echo "=== Deployment completed successfully! ==="
