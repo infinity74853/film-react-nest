@@ -104,22 +104,20 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          echo "=== Starting deployment ==="
           cd ~/film-app
           
-          echo "=== Pulling latest images ==="
-          docker compose pull --ignore-pull-failures
+          # Debug info
+          echo "=== Debug info ==="
+          whoami
+          pwd
+          ls -la
           
-          echo "=== Stopping old containers ==="
-          docker compose down
+          # Try without login first
+          echo "=== Pulling without login ==="
+          docker compose pull --ignore-pull-failures || echo "Pull failed, continuing..."
           
-          echo "=== Starting new containers ==="
+          echo "=== Starting containers ==="
           docker compose up -d
           
-          echo "=== Cleaning up ==="
-          docker image prune -f
-          
-          echo "=== Checking services ==="
+          echo "=== Final check ==="
           docker compose ps
-          
-          echo "=== Deployment completed successfully! ==="
