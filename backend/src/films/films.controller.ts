@@ -1,20 +1,31 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { FilmsService } from './films.service';
-import { ScheduleDto } from './dto/films.dto';
+import { ScheduleDto, FilmDto } from './dto/films.dto';
+
+// Создаем интерфейс для фильма с расписанием
+interface FilmWithSchedule extends FilmDto {
+  schedule: ScheduleDto[];
+}
+
+// Интерфейс для ответа
+interface FilmsResponse {
+  total: number;
+  items: FilmWithSchedule[];
+}
 
 @Controller()
 export class FilmsController {
   constructor(private readonly filmsService: FilmsService) {}
 
   @Get('films')
-  async getFilms(): Promise<{ total: number; items: any[] }> {
+  async getFilms(): Promise<FilmsResponse> {
     const result = await this.filmsService.getAllFilms();
 
     const filmsWithSchedule = result.items
-      .filter((film) => film && film.id)
+      .filter((film): film is FilmDto => film && typeof film.id === 'string')
       .map((film) => ({
         ...film,
-        schedule: [],
+        schedule: [], // Добавляем пустое расписание
       }));
 
     return { total: filmsWithSchedule.length, items: filmsWithSchedule };

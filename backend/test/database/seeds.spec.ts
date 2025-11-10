@@ -1,5 +1,5 @@
 import { importTestData } from '../../src/database/seeds/import-test-data';
-import { DataSource } from 'typeorm';
+import { DataSource, QueryRunner } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -10,15 +10,25 @@ jest.mock('path');
 const mockFs = fs as jest.Mocked<typeof fs>;
 const mockPath = path as jest.Mocked<typeof path>;
 
+// Создаем мок-интерфейс для QueryRunner
+interface MockQueryRunner extends QueryRunner {
+  connect: jest.Mock<Promise<void>>;
+  query: jest.Mock;
+  startTransaction: jest.Mock<Promise<void>>;
+  commitTransaction: jest.Mock<Promise<void>>;
+  rollbackTransaction: jest.Mock<Promise<void>>;
+  release: jest.Mock<Promise<void>>;
+}
+
 describe('Database Seeds', () => {
   let mockDataSource: DataSource;
-  let mockQueryRunner: any;
+  let mockQueryRunner: MockQueryRunner;
 
   beforeEach(() => {
     // Сбрасываем все моки
     jest.clearAllMocks();
 
-    // Мокаем queryRunner
+    // Мокаем queryRunner с правильной типизацией
     mockQueryRunner = {
       connect: jest.fn().mockResolvedValue(undefined),
       query: jest.fn(),
@@ -26,7 +36,7 @@ describe('Database Seeds', () => {
       commitTransaction: jest.fn().mockResolvedValue(undefined),
       rollbackTransaction: jest.fn().mockResolvedValue(undefined),
       release: jest.fn().mockResolvedValue(undefined),
-    };
+    } as MockQueryRunner;
 
     // Мокаем DataSource
     mockDataSource = {

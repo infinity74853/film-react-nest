@@ -2,6 +2,7 @@
 import * as crypto from 'crypto';
 
 // Crypto polyfill ДО всех остальных импортов
+// Используем any для совместимости с Node.js crypto
 if (typeof (global as any).crypto === 'undefined') {
   (global as any).crypto = {
     randomUUID: () => crypto.randomUUID(),
