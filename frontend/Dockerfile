@@ -1,4 +1,4 @@
-# Этап сборки
+# Этап сборки фронт
 FROM node:22-alpine AS build
 
 WORKDIR /app
