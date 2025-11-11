@@ -23,9 +23,15 @@ export class TypeormFilmsRepository implements FilmsRepository {
   private formatImageUrl(imagePath: string): string {
     if (!imagePath) return '';
 
-    // Более надежная обработка путей
-    const filename = imagePath.split('/').pop() || imagePath;
-    return filename.includes('.') ? filename : '';
+    // Если путь уже полный - возвращаем как есть
+    if (imagePath.startsWith('/')) return imagePath;
+
+    // Если это просто имя файла - добавляем полный путь
+    if (imagePath.includes('.')) {
+      return `/content/afisha/${imagePath}`;
+    }
+
+    return '';
   }
 
   // Преобразуем строку tags в массив

@@ -1,8 +1,0 @@
-services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile  # используем продакшн Dockerfile
-    environment:
-      LOGGER_TYPE: json  # продакшн логгер
-      NODE_ENV: production

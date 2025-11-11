@@ -79,8 +79,9 @@ describe('TypeormFilmsRepository', () => {
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe('1');
       expect(result[0].tags).toEqual(['action', 'drama']);
-      expect(result[0].image).toBe('poster1.jpg');
-      expect(result[0].cover).toBe('cover1.jpg');
+      // Исправленные ожидания для нового формата
+      expect(result[0].image).toBe('/images/poster1.jpg'); // Теперь возвращает полный путь
+      expect(result[0].cover).toBe('/images/cover1.jpg'); // Теперь возвращает полный путь
       expect(result[1].tags).toEqual(['comedy']);
       expect(filmRepo.find).toHaveBeenCalled();
     });
@@ -281,9 +282,9 @@ describe('TypeormFilmsRepository', () => {
   });
 
   describe('formatImageUrl', () => {
-    it('should extract filename from path', () => {
+    it('should return full path when path starts with /', () => {
       const result = (repository as any).formatImageUrl('/images/poster.jpg');
-      expect(result).toBe('poster.jpg');
+      expect(result).toBe('/images/poster.jpg');
     });
 
     it('should return empty string for invalid path', () => {
@@ -291,14 +292,24 @@ describe('TypeormFilmsRepository', () => {
       expect(result).toBe('');
     });
 
-    it('should return empty string for path without extension', () => {
+    it('should return full path for path without extension but with slash', () => {
       const result = (repository as any).formatImageUrl('/images/poster');
-      expect(result).toBe('');
+      expect(result).toBe('/images/poster'); // Теперь возвращает полный путь даже без расширения
     });
 
-    it('should handle filename without path', () => {
+    it('should add full path when only filename provided', () => {
       const result = (repository as any).formatImageUrl('poster.jpg');
-      expect(result).toBe('poster.jpg');
+      expect(result).toBe('/content/afisha/poster.jpg');
+    });
+
+    it('should handle filename with dots but without path', () => {
+      const result = (repository as any).formatImageUrl('my.poster.image.jpg');
+      expect(result).toBe('/content/afisha/my.poster.image.jpg');
+    });
+
+    it('should return empty string for filename without extension', () => {
+      const result = (repository as any).formatImageUrl('poster');
+      expect(result).toBe(''); // Без точки и без слеша - возвращает пустую строку
     });
   });
 

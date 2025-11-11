@@ -9,19 +9,12 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Проверим что собралось
-RUN ls -la /app/dist
-
-# Этап для статики - копируем в правильное место
+# Финальный этап - создаем статику для nginx
 FROM alpine:latest
 
 WORKDIR /static
 
-# Копируем собранные файлы из этапа build
+# Копируем собранные файлы
 COPY --from=build /app/dist/. ./
 
-# Проверим что файлы скопировались
-RUN ls -la /static
-
-# Ждем бесконечно
 CMD ["tail", "-f", "/dev/null"]

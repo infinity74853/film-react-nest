@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/test:/docker-entrypoint-initdb.d  # SQL файлы для инициализации
+      - ./backend/test:/docker-entrypoint-initdb.d
     networks:
       - film_network
     healthcheck:
@@ -40,7 +40,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: ${DOCKERFILE:-Dockerfile}
     image: ghcr.io/infinity74853/film-backend:latest
     container_name: film_backend
     environment:
@@ -50,8 +50,8 @@ services:
       POSTGRES_USERNAME: ${POSTGRES_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DATABASE: ${POSTGRES_DATABASE:-film_db}
-      LOGGER_TYPE: dev
-      NODE_ENV: development
+      LOGGER_TYPE: ${LOGGER_TYPE:-dev}
+      NODE_ENV: ${NODE_ENV:-development}
     networks:
       - film_network
     depends_on:
@@ -59,30 +59,30 @@ services:
         condition: service_healthy    
     restart: unless-stopped
 
-  # Фронтенд - сборка статики
+  # Фронтенд
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
     image: ghcr.io/infinity74853/film-frontend:latest
     container_name: film_frontend
     networks:
       - film_network
     volumes:
-      - frontend_static:/static
+      - frontend_static:/usr/share/nginx/html
     restart: unless-stopped
 
-  # Основной Nginx сервер
+  # Nginx сервер
   nginx:
-    build:
-      context: ./nginx
     image: ghcr.io/infinity74853/film-nginx:latest
     container_name: film_nginx
     ports:
       - "80:80"
+      - "443:443"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
     volumes:
-      # Монтируем статику из фронтенда
       - frontend_static:/usr/share/nginx/html:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
       - film_network
     depends_on:
@@ -92,7 +92,7 @@ services:
 
 volumes:
   postgres_data:
-  frontend_static:  # Volume для статики фронтенда
+  frontend_static:
 
 networks:
   film_network:

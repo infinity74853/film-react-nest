@@ -13,20 +13,6 @@ RUN npm ci
 # Копируем исходный код
 COPY . .
 
-# СОЗДАЕМ КОПИИ ФАЙЛОВ вместо symbolic links
-RUN mkdir -p /app/public && \
-    cd /app/public && \
-    for i in 1 2 3 4 5 6; do \
-        cp content/afisha/bg${i}s.jpg afishabg${i}s.jpg 2>/dev/null || echo "bg${i}s.jpg not found"; \
-        cp content/afisha/bg${i}c.jpg afishabg${i}c.jpg 2>/dev/null || echo "bg${i}c.jpg not found"; \
-    done
-
-# Проверим что файлы создались
-RUN echo "=== Created files ===" && \
-    ls -la /app/public/afishabg*.jpg 2>/dev/null || echo "No afishabg files found" && \
-    echo "=== Original files ===" && \
-    find /app/public/content -name "*.jpg" | head -10
-
 # Собираем приложение
 RUN npm run build
 
