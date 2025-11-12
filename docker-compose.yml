@@ -43,6 +43,8 @@ services:
       dockerfile: ${DOCKERFILE:-Dockerfile}
     image: ghcr.io/infinity74853/film-backend:latest
     container_name: film_backend
+    ports:
+    - "3000:3000"
     environment:
       DATABASE_DRIVER: postgres
       POSTGRES_HOST: postgres

@@ -23,6 +23,7 @@ async function bootstrap() {
   // СОЗДАЕМ ПРИЛОЖЕНИЕ С БУФЕРИЗАЦИЕЙ ЛОГОВ
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true, // ВАЖНО: буферизуем логи до настройки логгера
+    logger: process.env.NODE_ENV === 'test' ? ['error', 'warn', 'log'] : false,
   });
 
   // НАСТРАИВАЕМ ЛОГГЕР ПЕРВЫМ ДЕЛОМ
@@ -102,6 +103,7 @@ async function bootstrap() {
   // Логируем успешный запуск
   logger.log(`🚀 Application is running on: http://${host}:${port}`);
   logger.log(`📝 Logger type: ${process.env.LOGGER_TYPE || 'dev'}`);
+  logger.log(`✅ Server ready on http://${host}:${port}`);
 }
 
 bootstrap();
