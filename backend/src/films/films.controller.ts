@@ -1,47 +1,49 @@
-import { Controller, Get, Param, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Get, Param } from '@nestjs/common';
 import { FilmsService } from './films.service';
-import { FilmDto, ScheduleDto } from './dto/films.dto';
+import { ScheduleDto, FilmDto } from './dto/films.dto';
 
-@Controller('api/afisha/films')
+// Создаем интерфейс для фильма с расписанием
+interface FilmWithSchedule extends FilmDto {
+  schedule: ScheduleDto[];
+}
+
+// Интерфейс для ответа
+interface FilmsResponse {
+  total: number;
+  items: FilmWithSchedule[];
+}
+
+@Controller()
 export class FilmsController {
   constructor(private readonly filmsService: FilmsService) {}
 
-  @Get()
-  async getFilms(): Promise<{ total: number; items: FilmDto[] }> {
-    return await this.filmsService.getAllFilms();
+  @Get('films')
+  async getFilms(): Promise<FilmsResponse> {
+    const result = await this.filmsService.getAllFilms();
+
+    const filmsWithSchedule = result.items
+      .filter((film): film is FilmDto => film && typeof film.id === 'string')
+      .map((film) => ({
+        ...film,
+        schedule: [], // Добавляем пустое расписание
+      }));
+
+    return { total: filmsWithSchedule.length, items: filmsWithSchedule };
   }
 
-  @Get(':id/schedule')
+  @Get('films/:id/schedule')
   async getFilmSchedule(
     @Param('id') id: string,
   ): Promise<{ total: number; items: ScheduleDto[] }> {
-    return await this.filmsService.getFilmSchedule(id);
-  }
-
-  // Эндпоинт-прокси для картинок
-  @Get('images/:filename')
-  async getImage(@Param('filename') filename: string, @Res() res: Response) {
-    const result = await this.filmsService.getImage(filename);
-
-    if (result.success && result.filename && result.rootPath) {
-      return res.sendFile(result.filename, {
-        root: result.rootPath,
-      });
-    } else {
-      return res.status(result.statusCode).json({
-        message: result.message,
-        filename: result.filename,
-        error: result.error,
-      });
+    if (!id || id === '' || id === 'undefined') {
+      return { total: 0, items: [] };
     }
-  }
 
-  @Get('debug/mongo')
-  async debugMongo(): Promise<
-    | { success: boolean; count: number; films: FilmDto[] }
-    | { success: boolean; error: string }
-  > {
-    return await this.filmsService.debugMongo();
+    try {
+      const result = await this.filmsService.getFilmSchedule(id);
+      return result;
+    } catch {
+      return { total: 0, items: [] };
+    }
   }
 }
