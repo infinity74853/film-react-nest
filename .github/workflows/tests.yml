@@ -34,7 +34,13 @@ jobs:
         node-version: 18.x
     - name: Get testing lib
       run: set -eu && git clone --depth 1 $REP_TESTS $DIR_TESTS
-    - name: Start project
-      run: bash $DIR_TESTS/bin/start_project.sh
-    - name: Run tests
+    - name: Install dependencies
+      run: npm ci --prefix backend
+    - name: Build backend
+      run: npm run build --prefix backend
+    - name: Start backend
+      run: |
+        nohup npm run start:prod --prefix backend &
+        sleep 15
+    - name: Run endpoint tests
       run: bash $DIR_TESTS/bin/endpoints.sh
