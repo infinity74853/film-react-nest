@@ -97,7 +97,7 @@ async function bootstrap() {
   const port = 3000;
   const host = '0.0.0.0';
 
-  await app.listen(port, host);
+  await app.listen(port, '0.0.0.0');
 
   // Логируем успешный запуск
   logger.log(`🚀 Application is running on: http://${host}:${port}`);
